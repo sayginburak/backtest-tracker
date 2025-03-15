@@ -212,7 +212,7 @@ const BacktestList: React.FC = () => {
             </ClearFilterButton>
           )}
         </div>
-        <div>Total: {filteredBacktests.length} backtests</div>
+        <div>Total: {allBacktests.length} backtests{searchDate && ` (${filteredBacktests.length} filtered)`}</div>
       </FilterContainer>
       
       {filteredBacktests.length > 0 ? (
@@ -227,6 +227,10 @@ const BacktestList: React.FC = () => {
                 <TableHeader>Obviousness</TableHeader>
                 <TableHeader>MSS Time</TableHeader>
                 <TableHeader>Timeframe</TableHeader>
+                <TableHeader>Protected Swing</TableHeader>
+                <TableHeader>Price Expanded</TableHeader>
+                <TableHeader>Pips From Swing</TableHeader>
+                <TableHeader>Pips From MSS</TableHeader>
                 {!isProduction && <TableHeader>Actions</TableHeader>}
               </tr>
             </TableHead>
@@ -240,6 +244,10 @@ const BacktestList: React.FC = () => {
                   <TableCell>{backtest.obviousnessRating}/10</TableCell>
                   <TableCell>{backtest.mssTime}</TableCell>
                   <TableCell>{backtest.timeframe}</TableCell>
+                  <TableCell>{backtest.isProtectedSwing ? 'Yes' : 'No'}</TableCell>
+                  <TableCell>{backtest.didPriceExpand ? 'Yes' : 'No'}</TableCell>
+                  <TableCell>{backtest.pipsFromSwingLow}</TableCell>
+                  <TableCell>{backtest.pipsFromMSS}</TableCell>
                   {!isProduction && (
                     <TableCell>
                       <ActionButton onClick={() => handleDeleteBacktest(backtest.id)}>

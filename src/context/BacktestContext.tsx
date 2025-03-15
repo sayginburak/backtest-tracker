@@ -61,7 +61,20 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
   // Calculate streak whenever dailyProgress changes
   useEffect(() => {
     calculateStreak();
+    recalculateTotalBacktests();
   }, [state.dailyProgress]);
+
+  // Function to recalculate the total number of backtests
+  const recalculateTotalBacktests = () => {
+    let total = 0;
+    Object.values(state.dailyProgress).forEach(day => {
+      total += day.backtests.length;
+    });
+    
+    if (total !== state.totalBacktests) {
+      setState(prev => ({ ...prev, totalBacktests: total }));
+    }
+  };
 
   // Function to fetch the latest JSON data from the repo
   const fetchRepoDataAndSync = async () => {
