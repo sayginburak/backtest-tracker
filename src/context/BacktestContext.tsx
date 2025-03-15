@@ -210,13 +210,8 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   };
 
-  // Sync with repository data - completely rewritten with minimal implementation
+  // Sync with repository data - modified to work in both development and production
   const syncWithRepo = async (): Promise<SyncResult> => {
-    // In development mode, just return success without doing anything
-    if (!import.meta.env.PROD) {
-      return { success: true, message: "Sync skipped in development mode" };
-    }
-    
     try {
       // Simple flag to prevent multiple syncs
       if ((window as any).__syncInProgress) {
@@ -225,17 +220,26 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
       
       (window as any).__syncInProgress = true;
       
-      // Determine correct path for GitHub Pages
-      const base = window.location.pathname.includes('backtest-tracker') 
-        ? '/backtest-tracker/' 
-        : '/';
+      // Determine correct path based on environment
+      let base;
+      if (import.meta.env.PROD) {
+        // In production, calculate base from pathname
+        base = window.location.pathname.includes('backtest-tracker') 
+          ? '/backtest-tracker/' 
+          : '/';
+      } else {
+        // In development, use relative path
+        base = './';
+      }
       
       const url = `${base}data/backtests.json?t=${Date.now()}`;
       
       // Single fetch attempt
+      console.log(`Syncing data from: ${url}`);
       const response = await fetch(url);
       
       if (!response.ok) {
+        console.warn(`Sync failed: ${response.status} ${response.statusText}`);
         (window as any).__syncInProgress = false;
         return { 
           success: false, 
@@ -248,7 +252,10 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
       const repoState = repoData.data;
       
       // Only update if there's a meaningful difference
-      if (repoData.version > (state.lastUpdated || '0')) {
+      const currentVersion = state.lastUpdated || '0';
+      if (repoData.version > currentVersion) {
+        console.log(`Updating from version ${currentVersion} to ${repoData.version}`);
+        
         // Calculate actual backtest count from repo data
         let repoBacktestCount = 0;
         Object.values(repoState.dailyProgress).forEach((day: any) => {
@@ -266,9 +273,11 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
         return { success: true, message: "Data updated from repository" };
       }
       
+      console.log("Local data is already up-to-date");
       (window as any).__syncInProgress = false;
       return { success: true, message: "Local data is up to date" };
     } catch (error) {
+      console.error("Error during sync:", error);
       (window as any).__syncInProgress = false;
       return { 
         success: false, 
