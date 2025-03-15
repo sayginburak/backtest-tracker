@@ -1,5 +1,5 @@
 {
-  "version": "1742073722284",
+  "version": "1742074433590",
   "data": {
     "dailyProgress": {
       "2025-03-11": {
@@ -9,15 +9,43 @@
             "backtestDate": "2022-05-02",
             "datePerformed": "2025-03-11",
             "hasLiqSweep": true,
-            "swingFormationTime": "00:30",
-            "obviousnessRating": 8,
-            "mssTime": "03:04",
+            "swingFormationTime": "09:00",
+            "obviousnessRating": 5,
+            "mssTime": "10:00",
             "timeframe": "5m",
-            "isProtectedSwing": true,
-            "didPriceExpand": true,
+            "isProtectedSwing": false,
+            "didPriceExpand": false,
             "pipsFromSwingLow": 50,
-            "pipsFromMSS": 45,
-            "id": "1742073676558-0t61nw7"
+            "pipsFromMSS": 50,
+            "id": "1742074388297-yq35l1m"
+          },
+          {
+            "backtestDate": "2022-05-03",
+            "datePerformed": "2025-03-11",
+            "hasLiqSweep": false,
+            "swingFormationTime": "09:00",
+            "obviousnessRating": 5,
+            "mssTime": "10:00",
+            "timeframe": "5m",
+            "isProtectedSwing": false,
+            "didPriceExpand": false,
+            "pipsFromSwingLow": 0,
+            "pipsFromMSS": 0,
+            "id": "1742074401051-7nayqt2"
+          },
+          {
+            "backtestDate": "2022-05-04",
+            "datePerformed": "2025-03-11",
+            "hasLiqSweep": false,
+            "swingFormationTime": "09:00",
+            "obviousnessRating": 5,
+            "mssTime": "10:00",
+            "timeframe": "5m",
+            "isProtectedSwing": false,
+            "didPriceExpand": false,
+            "pipsFromSwingLow": 0,
+            "pipsFromMSS": 0,
+            "id": "1742074417964-234zskj"
           }
         ],
         "isComplete": false
@@ -29,7 +57,7 @@
       }
     },
     "currentStreak": 0,
-    "totalBacktests": 1,
-    "lastUpdated": "1742073676558"
+    "totalBacktests": 3,
+    "lastUpdated": "1742074417964"
   }
 }
