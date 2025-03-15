@@ -2,6 +2,16 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { BacktestState, Backtest } from '../types';
 import { format } from 'date-fns';
 
+// Config to control sync behavior
+const SYNC_CONFIG = {
+  // Only enable auto-sync in production, never in development
+  AUTO_SYNC_ENABLED: import.meta.env.PROD,
+  // Longer delay to prevent rapid syncing
+  INITIAL_SYNC_DELAY: 2000,
+  // Limit fetch attempts
+  MAX_FETCH_ATTEMPTS: 2,
+};
+
 // Helper function to get the base URL for the application
 const getBaseUrl = (): string => {
   // Get the base URL from the current location
@@ -50,10 +60,17 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   // Try to sync with repo data when component mounts
   useEffect(() => {
-    // Only run once on mount, not on every render
+    // Skip auto-sync completely in development mode
+    if (!SYNC_CONFIG.AUTO_SYNC_ENABLED) {
+      console.log('Auto-sync disabled in development mode');
+      return;
+    }
+    
+    // Only run once on mount with longer delay in production
     const timer = setTimeout(() => {
+      console.log('Performing initial data sync');
       fetchRepoDataAndSync();
-    }, 1000); // Add a delay to avoid immediate sync
+    }, SYNC_CONFIG.INITIAL_SYNC_DELAY);
     
     return () => clearTimeout(timer);
   }, []); // Empty dependency array to run only once
@@ -105,36 +122,34 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
       // Fetch the JSON file with a cache-busting parameter
       const timestamp = new Date().getTime();
       
-      console.log('Current pathname:', window.location.pathname);
-      console.log('Base URL from helper:', getBaseUrl());
-      
-      // Try different possible paths
-      const pathsToTry = [
-        `${getBaseUrl()}data/backtests.json`, // Try with base URL
-        `/backtest-tracker/data/backtests.json`, // Hardcoded path
-        `/data/backtests.json`, // Root-relative path
-        `./data/backtests.json`, // Relative path
-      ];
+      // In development mode, only try the local data path
+      const pathsToTry = import.meta.env.DEV
+        ? ['./data/backtests.json'] // Only try local path in dev
+        : [
+            `${getBaseUrl()}data/backtests.json`, 
+            `/backtest-tracker/data/backtests.json`,
+          ];
       
       console.log('Will try these paths:', pathsToTry);
       
       let response = null;
       let url = '';
       let fetchError = null;
+      let attemptCount = 0;
       
-      // Try each path until one works
+      // Try each path until one works, but limit attempts
       for (const path of pathsToTry) {
+        if (attemptCount >= SYNC_CONFIG.MAX_FETCH_ATTEMPTS) {
+          console.log('Reached maximum fetch attempts, stopping');
+          break;
+        }
+        
+        attemptCount++;
         url = `${path}?t=${timestamp}`;
-        console.log("\nAttempting fetch from:", url);
-        console.log("Full URL:", new URL(url, window.location.href).href);
         
         try {
+          console.log(`Attempt ${attemptCount}: Fetching from ${url}`);
           response = await fetch(url);
-          console.log(`Response for ${url}:`, {
-            ok: response.ok,
-            status: response.status,
-            statusText: response.statusText
-          });
           
           if (response.ok) {
             console.log("Successfully fetched from:", url);
@@ -367,6 +382,11 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   // Function to manually sync with repo
   const syncWithRepo = async (): Promise<SyncResult> => {
+    // In development, warn when auto-syncing is disabled
+    if (import.meta.env.DEV && !SYNC_CONFIG.AUTO_SYNC_ENABLED) {
+      console.log('Note: Auto-sync is disabled in development mode. This is a manual sync.');
+    }
+    
     return fetchRepoDataAndSync();
   };
 
