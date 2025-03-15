@@ -25,6 +25,13 @@ const BacktestTable = styled.table`
   border-collapse: collapse;
   margin-top: 15px;
   font-size: 0.9rem;
+  overflow-x: auto;
+`;
+
+const TableContainer = styled.div`
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 `;
 
 const TableHead = styled.thead`
@@ -47,6 +54,7 @@ const TableHeader = styled.th`
   border-bottom: 2px solid #dee2e6;
   color: #333;
   font-weight: 600;
+  white-space: nowrap;
 `;
 
 const TableCell = styled.td`
@@ -81,6 +89,13 @@ const FilterContainer = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 10px;
+  
+  @media (max-width: 576px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 `;
 
 const FilterInput = styled.input`
@@ -97,11 +112,10 @@ const FilterInput = styled.input`
     box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
     outline: none;
   }
-`;
-
-const FilterButtonsContainer = styled.div`
-  display: flex;
-  gap: 10px;
+  
+  @media (max-width: 576px) {
+    width: 100%;
+  }
 `;
 
 const ClearFilterButton = styled.button`
@@ -123,6 +137,7 @@ const BacktestList: React.FC = () => {
   const { state, deleteBacktest } = useBacktest();
   const { filterDate, setFilterDate } = useFilter();
   const [searchDate, setSearchDate] = React.useState('');
+  const isProduction = import.meta.env.PROD;
 
   useEffect(() => {
     if (filterDate) {
@@ -184,7 +199,7 @@ const BacktestList: React.FC = () => {
       <ListTitle>Backtest Entries</ListTitle>
       
       <FilterContainer>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
           <FilterInput
             type="text"
             placeholder="Filter by date (YYYY-MM-DD)"
@@ -201,38 +216,42 @@ const BacktestList: React.FC = () => {
       </FilterContainer>
       
       {filteredBacktests.length > 0 ? (
-        <BacktestTable>
-          <TableHead>
-            <tr>
-              <TableHeader>Backtest Date</TableHeader>
-              <TableHeader>Performed</TableHeader>
-              <TableHeader>Liq Sweep</TableHeader>
-              <TableHeader>Swing Time</TableHeader>
-              <TableHeader>Obviousness</TableHeader>
-              <TableHeader>MSS Time</TableHeader>
-              <TableHeader>Timeframe</TableHeader>
-              <TableHeader>Actions</TableHeader>
-            </tr>
-          </TableHead>
-          <tbody>
-            {filteredBacktests.map((backtest) => (
-              <TableRow key={backtest.id}>
-                <TableCell>{format(parseISO(backtest.backtestDate), 'MMM dd, yyyy')}</TableCell>
-                <TableCell>{format(parseISO(backtest.datePerformed), 'MMM dd, yyyy')}</TableCell>
-                <TableCell>{backtest.hasLiqSweep ? 'Yes' : 'No'}</TableCell>
-                <TableCell>{backtest.swingFormationTime}</TableCell>
-                <TableCell>{backtest.obviousnessRating}/10</TableCell>
-                <TableCell>{backtest.mssTime}</TableCell>
-                <TableCell>{backtest.timeframe}</TableCell>
-                <TableCell>
-                  <ActionButton onClick={() => handleDeleteBacktest(backtest.id)}>
-                    Delete
-                  </ActionButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </tbody>
-        </BacktestTable>
+        <TableContainer>
+          <BacktestTable>
+            <TableHead>
+              <tr>
+                <TableHeader>Backtest Date</TableHeader>
+                <TableHeader>Performed</TableHeader>
+                <TableHeader>Liq Sweep</TableHeader>
+                <TableHeader>Swing Time</TableHeader>
+                <TableHeader>Obviousness</TableHeader>
+                <TableHeader>MSS Time</TableHeader>
+                <TableHeader>Timeframe</TableHeader>
+                {!isProduction && <TableHeader>Actions</TableHeader>}
+              </tr>
+            </TableHead>
+            <tbody>
+              {filteredBacktests.map((backtest) => (
+                <TableRow key={backtest.id}>
+                  <TableCell>{format(parseISO(backtest.backtestDate), 'MMM dd, yyyy')}</TableCell>
+                  <TableCell>{format(parseISO(backtest.datePerformed), 'MMM dd, yyyy')}</TableCell>
+                  <TableCell>{backtest.hasLiqSweep ? 'Yes' : 'No'}</TableCell>
+                  <TableCell>{backtest.swingFormationTime}</TableCell>
+                  <TableCell>{backtest.obviousnessRating}/10</TableCell>
+                  <TableCell>{backtest.mssTime}</TableCell>
+                  <TableCell>{backtest.timeframe}</TableCell>
+                  {!isProduction && (
+                    <TableCell>
+                      <ActionButton onClick={() => handleDeleteBacktest(backtest.id)}>
+                        Delete
+                      </ActionButton>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+            </tbody>
+          </BacktestTable>
+        </TableContainer>
       ) : (
         <EmptyState>No backtest entries found. Add some using the form above.</EmptyState>
       )}
