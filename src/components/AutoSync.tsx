@@ -1,53 +1,39 @@
-import { useEffect } from 'react';
+import React from 'react';
 import { useBacktest } from '../context/BacktestContext';
 
-// Configuration for auto-sync behavior
-const AUTO_SYNC_CONFIG = {
-  // Only enable in production
-  ENABLED: import.meta.env.PROD,
-  // Initial delay before first sync (ms)
-  INITIAL_DELAY: 5000,
-  // Interval between syncs (ms)
-  INTERVAL: 5 * 60 * 1000, // 5 minutes
-};
-
-// This component doesn't render anything, it's just for synchronization
+// This component handles syncing data with the repository
+// It's completely disabled in development mode to prevent any console noise
 const AutoSync: React.FC = () => {
   const { syncWithRepo } = useBacktest();
+  const isProd = import.meta.env.PROD;
 
-  useEffect(() => {
-    // Skip completely in development mode
-    if (!AUTO_SYNC_CONFIG.ENABLED) {
-      console.log('AutoSync: Disabled in development mode');
-      return;
-    }
-
-    const autoSync = async () => {
+  // Only run in production
+  React.useEffect(() => {
+    // Skip everything in development mode
+    if (!isProd) return;
+    
+    // Function to sync data
+    const performSync = async () => {
       try {
-        console.log('AutoSync: Checking for updates...');
         await syncWithRepo();
       } catch (error) {
-        console.error('AutoSync: Error checking for updates', error);
+        // Silent fail in production
       }
     };
-
-    // Sync when component mounts, but with a delay
-    const initialSyncTimer = setTimeout(() => {
-      console.log('AutoSync: Performing initial sync');
-      autoSync();
-    }, AUTO_SYNC_CONFIG.INITIAL_DELAY);
-
-    // Also set up an interval to check periodically (for long-lived sessions)
-    const intervalId = setInterval(autoSync, AUTO_SYNC_CONFIG.INTERVAL);
-
-    // Clean up the interval when component unmounts
+    
+    // Initial sync after 3 seconds
+    const initialTimer = setTimeout(performSync, 3000);
+    
+    // Periodic sync every 15 minutes (only in production)
+    const intervalTimer = setInterval(performSync, 15 * 60 * 1000);
+    
     return () => {
-      clearTimeout(initialSyncTimer);
-      clearInterval(intervalId);
+      clearTimeout(initialTimer);
+      clearInterval(intervalTimer);
     };
-  }, [syncWithRepo]);
-
-  // This component doesn't render anything
+  }, [isProd, syncWithRepo]);
+  
+  // Component doesn't render anything
   return null;
 };
 
