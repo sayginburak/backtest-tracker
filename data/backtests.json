@@ -1,5 +1,5 @@
 {
-  "version": "1742045057008",
+  "version": "1742073722284",
   "data": {
     "dailyProgress": {
       "2025-03-11": {
@@ -8,43 +8,28 @@
           {
             "backtestDate": "2022-05-02",
             "datePerformed": "2025-03-11",
-            "hasLiqSweep": false,
-            "swingFormationTime": "02:30",
+            "hasLiqSweep": true,
+            "swingFormationTime": "00:30",
             "obviousnessRating": 8,
-            "mssTime": "03:45",
+            "mssTime": "03:04",
             "timeframe": "5m",
-            "isProtectedSwing": false,
-            "didPriceExpand": false,
-            "pipsFromSwingLow": 60,
-            "pipsFromMSS": 50,
-            "id": "1741986106442-5xcfd1z"
+            "isProtectedSwing": true,
+            "didPriceExpand": true,
+            "pipsFromSwingLow": 50,
+            "pipsFromMSS": 45,
+            "id": "1742073676558-0t61nw7"
           }
         ],
         "isComplete": false
       },
       "2025-03-12": {
         "date": "2025-03-12",
-        "backtests": [
-          {
-            "backtestDate": "2022-05-04",
-            "datePerformed": "2025-03-12",
-            "hasLiqSweep": true,
-            "swingFormationTime": "02:40",
-            "obviousnessRating": 7,
-            "mssTime": "03:45",
-            "timeframe": "1m",
-            "isProtectedSwing": true,
-            "didPriceExpand": true,
-            "pipsFromSwingLow": 70,
-            "pipsFromMSS": 45,
-            "id": "1742044970072-aep60e2"
-          }
-        ],
+        "backtests": [],
         "isComplete": false
       }
     },
     "currentStreak": 0,
-    "totalBacktests": 3,
-    "lastUpdated": "1742044970072"
+    "totalBacktests": 1,
+    "lastUpdated": "1742073676558"
   }
 }
