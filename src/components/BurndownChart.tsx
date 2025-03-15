@@ -1,0 +1,235 @@
+import React, { useEffect, useState } from 'react';
+import { Line } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
+import styled from '@emotion/styled';
+import { format, subDays, isBefore, startOfMonth, endOfMonth } from 'date-fns';
+import { useBacktest } from '../context/BacktestContext';
+
+// Register Chart.js components
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+
+const ChartContainer = styled.div`
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+`;
+
+const ChartWrapper = styled.div`
+  width: 100%;
+  height: 400px; /* Make the chart taller for better visibility */
+  margin-bottom: 20px;
+`;
+
+const ChartTitle = styled.h2`
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #333;
+  font-size: 1.5rem;
+`;
+
+const FilterContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+`;
+
+const SelectFilter = styled.select`
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  width: 150px;
+  color: #333;
+  background-color: #fff;
+  
+  &:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    outline: none;
+  }
+`;
+
+const StatText = styled.p`
+  color: #333;
+  margin: 8px 0;
+  font-size: 0.95rem;
+  
+  strong {
+    font-weight: 600;
+    color: #555;
+  }
+`;
+
+const BurndownChart: React.FC = () => {
+  const { state } = useBacktest();
+  const [period, setPeriod] = useState<'7days' | '30days' | 'month'>('30days');
+  const [chartData, setChartData] = useState<any>({ labels: [], datasets: [] });
+  
+  useEffect(() => {
+    generateChartData();
+  }, [state.dailyProgress, period]);
+
+  const generateDateRange = (): Date[] => {
+    const today = new Date();
+    const dates: Date[] = [];
+
+    if (period === '7days') {
+      for (let i = 6; i >= 0; i--) {
+        dates.push(subDays(today, i));
+      }
+    } else if (period === '30days') {
+      for (let i = 29; i >= 0; i--) {
+        dates.push(subDays(today, i));
+      }
+    } else if (period === 'month') {
+      const firstDay = startOfMonth(today);
+      const lastDay = endOfMonth(today);
+      let currentDate = new Date(firstDay);
+      
+      while (isBefore(currentDate, lastDay) || currentDate.getDate() === lastDay.getDate()) {
+        dates.push(new Date(currentDate));
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+    }
+
+    return dates;
+  };
+
+  const generateChartData = () => {
+    const dateRange = generateDateRange();
+    
+    // Prepare labels for the chart (x-axis)
+    const labels = dateRange.map(date => format(date, 'MMM dd'));
+    
+    // Check if the dailyProgress object has any data
+    const progressKeys = Object.keys(state.dailyProgress);
+    
+    // Count backtests for each date
+    let totalBacktests = 0;
+    progressKeys.forEach(dateKey => {
+      const count = state.dailyProgress[dateKey]?.backtests.length || 0;
+      totalBacktests += count;
+    });
+
+    // Actual backtests done per day - ensure correct date formatting for lookup
+    const actualData = dateRange.map(date => {
+      const dateKey = format(date, 'yyyy-MM-dd');
+      const dayProgress = state.dailyProgress[dateKey];
+      return dayProgress?.backtests.length || 0;
+    });
+    
+    // Cumulative backtests (total done so far)
+    const cumulativeData = [];
+    let running = 0;
+    for (const count of actualData) {
+      running += count;
+      cumulativeData.push(running);
+    }
+    
+    // Set chart data
+    setChartData({
+      labels,
+      datasets: [
+        {
+          label: 'Daily Backtests',
+          data: actualData,
+          borderColor: 'rgb(54, 162, 235)',
+          backgroundColor: 'rgba(54, 162, 235, 0.5)',
+          tension: 0.1,
+          borderWidth: 2,
+          pointRadius: 4,
+        },
+        {
+          label: 'Cumulative Progress',
+          data: cumulativeData,
+          borderColor: 'rgb(75, 192, 192)',
+          backgroundColor: 'rgba(75, 192, 192, 0.5)',
+          tension: 0.1,
+          borderWidth: 2,
+          pointRadius: 4,
+        }
+      ],
+    });
+  };
+
+  return (
+    <ChartContainer>
+      <ChartTitle>Backtest Progress Chart</ChartTitle>
+      
+      <FilterContainer>
+        <label htmlFor="period-filter">Time Period:</label>
+        <SelectFilter 
+          id="period-filter" 
+          value={period} 
+          onChange={(e) => setPeriod(e.target.value as any)}
+        >
+          <option value="7days">Last 7 Days</option>
+          <option value="30days">Last 30 Days</option>
+          <option value="month">This Month</option>
+        </SelectFilter>
+      </FilterContainer>
+      
+      <ChartWrapper>
+        <Line 
+          data={chartData} 
+          options={{
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: 'Number of Backtests',
+                  color: '#333',
+                },
+                ticks: {
+                  color: '#333',
+                },
+              },
+              x: {
+                title: {
+                  display: true,
+                  text: 'Date',
+                  color: '#333',
+                },
+                ticks: {
+                  color: '#333',
+                },
+              },
+            },
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: {
+                  color: '#333',
+                  font: {
+                    size: 12,
+                  },
+                },
+              },
+              tooltip: {
+                mode: 'index',
+                intersect: false,
+              },
+            },
+          }} 
+        />
+      </ChartWrapper>
+      
+      <div style={{ marginTop: '20px' }}>
+        <StatText>
+          <strong>Current streak:</strong> {state.currentStreak} day(s)
+        </StatText>
+        <StatText>
+          <strong>Total backtests completed:</strong> {state.totalBacktests}
+        </StatText>
+      </div>
+    </ChartContainer>
+  );
+};
+
+export default BurndownChart; 

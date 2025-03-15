@@ -1,0 +1,50 @@
+{
+  "version": "1742045057008",
+  "data": {
+    "dailyProgress": {
+      "2025-03-11": {
+        "date": "2025-03-11",
+        "backtests": [
+          {
+            "backtestDate": "2022-05-02",
+            "datePerformed": "2025-03-11",
+            "hasLiqSweep": false,
+            "swingFormationTime": "02:30",
+            "obviousnessRating": 8,
+            "mssTime": "03:45",
+            "timeframe": "5m",
+            "isProtectedSwing": false,
+            "didPriceExpand": false,
+            "pipsFromSwingLow": 60,
+            "pipsFromMSS": 50,
+            "id": "1741986106442-5xcfd1z"
+          }
+        ],
+        "isComplete": false
+      },
+      "2025-03-12": {
+        "date": "2025-03-12",
+        "backtests": [
+          {
+            "backtestDate": "2022-05-04",
+            "datePerformed": "2025-03-12",
+            "hasLiqSweep": true,
+            "swingFormationTime": "02:40",
+            "obviousnessRating": 7,
+            "mssTime": "03:45",
+            "timeframe": "1m",
+            "isProtectedSwing": true,
+            "didPriceExpand": true,
+            "pipsFromSwingLow": 70,
+            "pipsFromMSS": 45,
+            "id": "1742044970072-aep60e2"
+          }
+        ],
+        "isComplete": false
+      }
+    },
+    "currentStreak": 0,
+    "totalBacktests": 3,
+    "lastUpdated": "1742044970072"
+  }
+}
