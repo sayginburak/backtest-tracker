@@ -50,19 +50,33 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   // Try to sync with repo data when component mounts
   useEffect(() => {
-    fetchRepoDataAndSync();
-  }, []);
-
-  // Save to localStorage whenever state changes
-  useEffect(() => {
-    localStorage.setItem('backtestData', JSON.stringify(state));
-  }, [state]);
+    // Only run once on mount, not on every render
+    const timer = setTimeout(() => {
+      fetchRepoDataAndSync();
+    }, 1000); // Add a delay to avoid immediate sync
+    
+    return () => clearTimeout(timer);
+  }, []); // Empty dependency array to run only once
 
   // Calculate streak whenever dailyProgress changes
   useEffect(() => {
-    calculateStreak();
-    recalculateTotalBacktests();
+    // Use a debounce mechanism to avoid rapid recalculations
+    const timer = setTimeout(() => {
+      calculateStreak();
+      recalculateTotalBacktests();
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, [state.dailyProgress]);
+
+  // Save to localStorage whenever state changes, but debounced to reduce frequency
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      localStorage.setItem('backtestData', JSON.stringify(state));
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [state]);
 
   // Function to recalculate the total number of backtests
   const recalculateTotalBacktests = () => {
@@ -72,12 +86,21 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
     });
     
     if (total !== state.totalBacktests) {
+      console.log('Updating total backtests count:', { previous: state.totalBacktests, new: total });
       setState(prev => ({ ...prev, totalBacktests: total }));
     }
   };
 
   // Function to fetch the latest JSON data from the repo
   const fetchRepoDataAndSync = async () => {
+    // Add debounce flag to prevent multiple syncs
+    if ((window as any).__isSyncing) {
+      console.log('Sync already in progress, skipping');
+      return { success: false, message: "Sync already in progress" };
+    }
+    
+    (window as any).__isSyncing = true;
+    
     try {
       // Fetch the JSON file with a cache-busting parameter
       const timestamp = new Date().getTime();
@@ -129,6 +152,7 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
       if (!response || !response.ok) {
         console.error('All fetch attempts failed. Last URL attempted:', url);
         if (fetchError) console.error('Last error:', fetchError);
+        (window as any).__isSyncing = false;
         return { 
           success: false, 
           message: response 
@@ -155,17 +179,42 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
       // Always use repo data in production, or if repo version is newer in development
       if (isProd || parseInt(repoVersion) > parseInt(localVersion)) {
         console.log("Using repo data because:", isProd ? "production mode" : "newer version");
-        setState({
-          ...repoData.data,
-          lastUpdated: repoVersion
+        
+        // Check if the data is actually different before updating state
+        const repoTotalBacktests = repoData.data.totalBacktests;
+        let repoDailyBacktestsCount = 0;
+        
+        Object.values(repoData.data.dailyProgress).forEach((day: any) => {
+          repoDailyBacktestsCount += day.backtests.length;
         });
-        return { success: true, message: "Updated from repo data" };
+        
+        // Only update if there's a meaningful difference in the data
+        if (repoTotalBacktests !== state.totalBacktests || repoDailyBacktestsCount !== state.totalBacktests) {
+          console.log("Updating state with repo data. Previous count:", state.totalBacktests, "New count:", repoDailyBacktestsCount);
+          
+          // Make sure totalBacktests is set to match the actual count
+          const updatedData = {
+            ...repoData.data,
+            totalBacktests: repoDailyBacktestsCount,
+            lastUpdated: repoVersion
+          };
+          
+          setState(updatedData);
+          (window as any).__isSyncing = false;
+          return { success: true, message: "Updated from repo data" };
+        } else {
+          console.log("Repo data has same backtest count, skipping update");
+          (window as any).__isSyncing = false;
+          return { success: false, message: "No meaningful difference in data" };
+        }
       } else {
         console.log("Local data is up to date, local version:", localVersion, "repo version:", repoVersion);
+        (window as any).__isSyncing = false;
         return { success: false, message: "Local data is up to date" };
       }
     } catch (error) {
       console.error("Error fetching repo data:", error);
+      (window as any).__isSyncing = false;
       return { success: false, message: "Error fetching repo data" };
     }
   };
@@ -219,7 +268,6 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
     const newBacktest: Backtest = {
       ...backtestData,
       id,
-      // If datePerformed is provided in backtestData, it will be used, otherwise use today
     };
     
     setState(prevState => {
@@ -239,10 +287,16 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
         isComplete,
       };
       
+      // Calculate the new total directly instead of incrementing
+      let newTotal = 0;
+      Object.values(updatedDailyProgress).forEach(day => {
+        newTotal += day.backtests.length;
+      });
+      
       return {
         ...prevState,
         dailyProgress: updatedDailyProgress,
-        totalBacktests: prevState.totalBacktests + 1,
+        totalBacktests: newTotal,
         lastUpdated: Date.now().toString(),
       };
     });
@@ -272,10 +326,16 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
         isComplete: updatedBacktests.length >= 5,
       };
       
+      // Calculate the new total directly
+      let newTotal = 0;
+      Object.values(updatedDailyProgress).forEach(day => {
+        newTotal += day.backtests.length;
+      });
+      
       return {
         ...prevState,
         dailyProgress: updatedDailyProgress,
-        totalBacktests: prevState.totalBacktests - 1,
+        totalBacktests: newTotal,
         lastUpdated: Date.now().toString(),
       };
     });
