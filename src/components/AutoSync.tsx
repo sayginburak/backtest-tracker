@@ -10,7 +10,6 @@ const LAST_VERSION_KEY = 'backtest_app_version';
 // It's configured to force update on page load to ensure the app always has the latest data
 const AutoSync: React.FC = () => {
   const { syncWithRepo } = useBacktest();
-  const isProd = import.meta.env.PROD;
   const [initialSyncDone, setInitialSyncDone] = useState(false);
 
   // Force update detection on page load
