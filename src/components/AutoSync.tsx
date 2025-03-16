@@ -55,7 +55,7 @@ const AutoSync: React.FC = () => {
         console.log('[AutoSync] Checking for data updates...');
         
         // Force sync to always check with server
-        const result = await syncWithRepo(true);
+        await syncWithRepo(true);
         
         // After sync, check if data version changed
         const newDataVersion = state.lastUpdated || '0';
