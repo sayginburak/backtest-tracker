@@ -3,7 +3,7 @@ import { useBacktest } from '../context/BacktestContext';
 
 // Version identifier for the application code
 // This should be updated whenever a new deployment is made
-const APP_VERSION = Date.now().toString();
+const APP_VERSION = '1.0.0'; // Fixed version instead of Date.now()
 const LAST_VERSION_KEY = 'backtest_app_version';
 
 // This component handles automatic syncing with the repository
@@ -16,14 +16,15 @@ const AutoSync: React.FC = () => {
   useEffect(() => {
     const lastVersion = localStorage.getItem(LAST_VERSION_KEY) || '0';
     
-    // Always store the current version for future checks
-    localStorage.setItem(LAST_VERSION_KEY, APP_VERSION);
-    
-    // Function to perform a hard refresh if needed
-    const checkForCodeUpdates = () => {
-      // If lastVersion doesn't match current and we're not in a fresh session
+    // Only update localStorage if the version is different to prevent writes on every load
+    if (lastVersion !== APP_VERSION) {
+      // Store the current version for future checks
+      localStorage.setItem(LAST_VERSION_KEY, APP_VERSION);
+      
+      // Only refresh if coming from a different version (not a fresh load)
+      // This prevents refresh loops
       if (lastVersion !== '0' && lastVersion !== APP_VERSION) {
-        console.log('App version changed, refreshing...');
+        console.log(`App version changed from ${lastVersion} to ${APP_VERSION}, refreshing...`);
         
         // Clear any caches before forcing reload
         if ('caches' in window) {
@@ -37,10 +38,7 @@ const AutoSync: React.FC = () => {
         // Force reload without cache
         window.location.reload();
       }
-    };
-    
-    // Check for code updates
-    checkForCodeUpdates();
+    }
   }, []);
 
   // Force data sync on page load and periodically
@@ -49,7 +47,7 @@ const AutoSync: React.FC = () => {
     const performSync = async (force = false) => {
       try {
         // Force sync will bypass version checking
-        const result = await syncWithRepo();
+        const result = await syncWithRepo(force);
         
         // Update initial sync status after first attempt
         if (!initialSyncDone) {
@@ -70,11 +68,11 @@ const AutoSync: React.FC = () => {
                   cache.delete(`${window.location.origin}/data/backtests.json`);
                   
                   // Try sync again
-                  syncWithRepo();
+                  syncWithRepo(true);
                 });
               } else {
                 // Basic retry if cache API isn't available
-                syncWithRepo();
+                syncWithRepo(true);
               }
             }, 1000);
           }
