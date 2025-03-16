@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useBacktest } from '../context/BacktestContext';
 
 // Version identifier for the application code
