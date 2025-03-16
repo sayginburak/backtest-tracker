@@ -15,7 +15,7 @@ interface BacktestContextType {
   deleteBacktest: (id: string) => void;
   exportData: () => string;
   importData: (jsonData: string) => void;
-  syncWithRepo: () => Promise<SyncResult>;
+  syncWithRepo: (force?: boolean) => Promise<SyncResult>;
 }
 
 // Initial state
@@ -245,7 +245,7 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   // Sync with repository data - modified to work in both development and production
-  const syncWithRepo = async (): Promise<SyncResult> => {
+  const syncWithRepo = async (force: boolean = false): Promise<SyncResult> => {
     try {
       // Simple flag to prevent multiple syncs
       if ((window as any).__syncInProgress) {
@@ -266,11 +266,20 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
         base = './';
       }
       
-      const url = `${base}data/backtests.json?t=${Date.now()}`;
+      // Add cache-busting parameter
+      const cacheBuster = Date.now();
+      const url = `${base}data/backtests.json?t=${cacheBuster}`;
       
       // Single fetch attempt
       console.log(`Syncing data from: ${url}`);
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        // Ensure we're not getting cached responses
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
       
       if (!response.ok) {
         console.warn(`Sync failed: ${response.status} ${response.statusText}`);
@@ -285,9 +294,9 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
       const repoData = await response.json();
       const repoState = repoData.data;
       
-      // Only update if there's a meaningful difference
+      // Only update if there's a meaningful difference or force is true
       const currentVersion = state.lastUpdated || '0';
-      if (repoData.version > currentVersion) {
+      if (force || repoData.version > currentVersion) {
         console.log(`Updating from version ${currentVersion} to ${repoData.version}`);
         
         // Calculate actual backtest count from repo data
