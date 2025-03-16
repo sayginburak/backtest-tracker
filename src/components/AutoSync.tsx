@@ -3,17 +3,18 @@ import { useBacktest } from '../context/BacktestContext';
 
 // Version identifier for the application code
 // This should only be incremented when there's a change that requires a client refresh
-const APP_VERSION = '1.0.3';
+const APP_VERSION = '1.0.4';
 const LAST_VERSION_KEY = 'backtest_app_version';
 const LAST_SYNC_KEY = 'backtest_last_sync_time';
 
-// How long to wait before checking for updates again (24 hours)
+// How long to wait before checking for updates again (24 hours) - only used in development
 const SYNC_INTERVAL = 24 * 60 * 60 * 1000;
 
 const AutoSync: React.FC = () => {
   const { syncWithRepo } = useBacktest();
   const syncInProgressRef = useRef(false);
   const hasCompletedInitialSyncRef = useRef(false);
+  const isProd = import.meta.env.PROD;
   
   // Handle app version changes (code updates)
   useEffect(() => {
@@ -44,10 +45,16 @@ const AutoSync: React.FC = () => {
     }
   }, []);
 
-  // Data sync - only on first load and when necessary
+  // Data sync - behavior differs between production and development
   useEffect(() => {
-    // Check if we should sync based on time elapsed
+    // Check if we should sync based on environment and time elapsed
     const shouldSync = () => {
+      // In production, always sync on page load
+      if (isProd) {
+        return true;
+      }
+      
+      // In development, use the time-based approach
       const lastSyncTime = localStorage.getItem(LAST_SYNC_KEY);
       
       if (!lastSyncTime) {
@@ -69,9 +76,10 @@ const AutoSync: React.FC = () => {
       
       try {
         syncInProgressRef.current = true;
-        console.log('[AutoSync] Checking for data updates...');
+        console.log(`[AutoSync] Checking for data updates... (in ${isProd ? 'production' : 'development'})`);
         
-        const result = await syncWithRepo(false); // Don't force sync every time
+        // In production, we want to check version number but not bypass cache every time
+        const result = await syncWithRepo(isProd ? false : false);
         
         if (result.success) {
           console.log('[AutoSync] Sync completed successfully');
@@ -91,10 +99,10 @@ const AutoSync: React.FC = () => {
     
     // Only sync if needed
     if (shouldSync()) {
-      console.log('[AutoSync] Performing initial data sync');
+      console.log(`[AutoSync] Performing data sync (${isProd ? 'Production mode - always sync' : 'Development mode - sync if needed'})`);
       performSync();
     } else {
-      console.log('[AutoSync] Skipping sync - data is recent');
+      console.log('[AutoSync] Skipping sync - data is recent (Development mode)');
       hasCompletedInitialSyncRef.current = true;
     }
     
