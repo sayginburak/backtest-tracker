@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import styled from '@emotion/styled';
-import { format, subDays, isBefore, startOfMonth, endOfMonth } from 'date-fns';
+import { format, subDays, isBefore, startOfMonth, endOfMonth, isWeekend, isBefore as isBeforeDate, parseISO } from 'date-fns';
 import { useBacktest } from '../context/BacktestContext';
 
 // Register Chart.js components
@@ -100,9 +100,15 @@ const BurndownChart: React.FC = () => {
 
   const generateChartData = () => {
     const dateRange = generateDateRange();
+    const startDate = parseISO('2025-03-11'); // March 11, 2025 as start date
     
-    // Prepare labels for the chart (x-axis)
-    const labels = dateRange.map(date => format(date, 'MMM dd'));
+    // Prepare labels for the chart (x-axis) - show day names for weekends
+    const labels = dateRange.map(date => {
+      if (isWeekend(date)) {
+        return format(date, 'EEEE'); // Day name for weekends (Saturday, Sunday)
+      }
+      return format(date, 'MMM dd');
+    });
     
     // Check if the dailyProgress object has any data
     const progressKeys = Object.keys(state.dailyProgress);
@@ -129,6 +135,30 @@ const BurndownChart: React.FC = () => {
       cumulativeData.push(running);
     }
     
+    // Daily target line (constant at 5)
+    const dailyTargetData = Array(dateRange.length).fill(5);
+    
+    // Ideal cumulative progress (5 backtests per work day)
+    const idealCumulativeData = [];
+    let idealTotal = 0;
+    
+    for (let i = 0; i < dateRange.length; i++) {
+      const currentDate = dateRange[i];
+      
+      // Only start counting from the start date
+      if (isBeforeDate(currentDate, startDate)) {
+        idealCumulativeData.push(0);
+        continue;
+      }
+      
+      // Only increase the ideal count on weekdays
+      if (!isWeekend(currentDate)) {
+        idealTotal += 5; // Add 5 for each weekday
+      }
+      
+      idealCumulativeData.push(idealTotal);
+    }
+    
     // Set chart data
     setChartData({
       labels,
@@ -150,6 +180,24 @@ const BurndownChart: React.FC = () => {
           tension: 0.1,
           borderWidth: 2,
           pointRadius: 4,
+        },
+        {
+          label: 'Daily Target (5)',
+          data: dailyTargetData,
+          borderColor: 'rgba(255, 99, 132, 0.8)',
+          borderDash: [5, 5],
+          fill: false,
+          pointRadius: 0,
+          borderWidth: 2,
+        },
+        {
+          label: 'Ideal Progress (Weekdays Only)',
+          data: idealCumulativeData,
+          borderColor: 'rgba(153, 102, 255, 0.8)',
+          borderDash: [3, 3],
+          fill: false,
+          pointRadius: 0,
+          borderWidth: 2,
         }
       ],
     });
