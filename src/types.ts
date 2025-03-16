@@ -2,6 +2,7 @@ export interface Backtest {
   id: string;
   backtestDate: string; // The date this backtest is for
   datePerformed: string; // When the backtest was performed
+  noSetupFound: boolean; // No valid setup was found
   hasLiqSweep: boolean; // Is there an obvious liq sweep?
   swingFormationTime: string; // When the swing high/low was formed
   obviousnessRating: number; // Rate of obviousness (1-10)
@@ -11,6 +12,9 @@ export interface Backtest {
   didPriceExpand: boolean; // Did price expand?
   pipsFromSwingLow: number; // How many pips from the new swing low
   pipsFromMSS: number; // How many pips from the MSS
+  chartUrl?: string; // URL to the chart for this backtest
+  liqSwingType?: string; // Type of liquidity swing
+  convincingRating?: number; // How convincing the liq sweep is (1-10)
 }
 
 export interface DailyProgress {

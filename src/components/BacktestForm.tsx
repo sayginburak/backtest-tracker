@@ -62,6 +62,22 @@ const RadioLabel = styled.label`
   color: #333;
 `;
 
+const Select = styled.select`
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 1rem;
+  color: #333;
+  background-color: #fff;
+  
+  &:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    outline: none;
+  }
+`;
+
 const Button = styled.button`
   background-color: #007bff;
   color: white;
@@ -90,15 +106,19 @@ const BacktestForm: React.FC = () => {
   const { addBacktest } = useBacktest();
   const [backtestDate, setBacktestDate] = useState<Date | null>(new Date());
   const [datePerformed, setDatePerformed] = useState<Date | null>(new Date());
+  const [noSetupFound, setNoSetupFound] = useState<boolean>(false);
   const [hasLiqSweep, setHasLiqSweep] = useState<boolean>(false);
   const [swingFormationTime, setSwingFormationTime] = useState<Date | null>(null);
   const [obviousnessRating, setObviousnessRating] = useState<number>(5);
+  const [liqSwingType, setLiqSwingType] = useState<string>('PDH/PDL');
+  const [convincingRating, setConvincingRating] = useState<number>(5);
   const [mssTime, setMssTime] = useState<Date | null>(null);
   const [timeframe, setTimeframe] = useState<'1m' | '5m'>('5m');
   const [isProtectedSwing, setIsProtectedSwing] = useState<boolean>(false);
   const [didPriceExpand, setDidPriceExpand] = useState<boolean>(false);
   const [pipsFromSwingLow, setPipsFromSwingLow] = useState<number>(0);
   const [pipsFromMSS, setPipsFromMSS] = useState<number>(0);
+  const [chartUrl, setChartUrl] = useState<string>('');
 
   useEffect(() => {
     if (backtestDate) {
@@ -133,28 +153,35 @@ const BacktestForm: React.FC = () => {
       return;
     }
 
-    if (!swingFormationTime) {
-      alert('Please select when the swing high/low was formed');
-      return;
-    }
+    // Only validate these fields if no setup is not found
+    if (!noSetupFound) {
+      if (!swingFormationTime) {
+        alert('Please select when the swing high/low was formed');
+        return;
+      }
 
-    if (!mssTime) {
-      alert('Please select when MSS came after the sweep');
-      return;
+      if (!mssTime) {
+        alert('Please select when MSS came after the sweep');
+        return;
+      }
     }
 
     const newBacktest: Omit<Backtest, 'id'> = {
       backtestDate: format(backtestDate, 'yyyy-MM-dd'),
       datePerformed: format(datePerformed, 'yyyy-MM-dd'),
-      hasLiqSweep,
-      swingFormationTime: format(swingFormationTime, 'HH:mm'),
-      obviousnessRating,
-      mssTime: format(mssTime, 'HH:mm'),
-      timeframe,
-      isProtectedSwing,
-      didPriceExpand,
-      pipsFromSwingLow,
-      pipsFromMSS
+      noSetupFound,
+      hasLiqSweep: noSetupFound ? false : hasLiqSweep,
+      swingFormationTime: noSetupFound ? '' : format(swingFormationTime || new Date(), 'HH:mm'),
+      obviousnessRating: noSetupFound ? 0 : obviousnessRating,
+      mssTime: noSetupFound ? '' : format(mssTime || new Date(), 'HH:mm'),
+      timeframe: noSetupFound ? '5m' : timeframe,
+      isProtectedSwing: noSetupFound ? false : isProtectedSwing,
+      didPriceExpand: noSetupFound ? false : didPriceExpand,
+      pipsFromSwingLow: noSetupFound ? 0 : pipsFromSwingLow,
+      pipsFromMSS: noSetupFound ? 0 : pipsFromMSS,
+      chartUrl: chartUrl,
+      liqSwingType: noSetupFound ? '' : liqSwingType,
+      convincingRating: noSetupFound ? 0 : convincingRating
     };
 
     addBacktest(newBacktest);
@@ -165,15 +192,19 @@ const BacktestForm: React.FC = () => {
     const now = new Date();
     setBacktestDate(now);
     setDatePerformed(now);
+    setNoSetupFound(false);
     setHasLiqSweep(false);
     setSwingFormationTime(setHours(setMinutes(new Date(now), 0), 9));
     setObviousnessRating(5);
+    setLiqSwingType('PDH/PDL');
+    setConvincingRating(5);
     setMssTime(setHours(setMinutes(new Date(now), 0), 10));
     setTimeframe('5m');
     setIsProtectedSwing(false);
     setDidPriceExpand(false);
     setPipsFromSwingLow(0);
     setPipsFromMSS(0);
+    setChartUrl('');
   };
 
   return (
@@ -206,6 +237,28 @@ const BacktestForm: React.FC = () => {
         </FormGroup>
 
         <FormGroup>
+          <Label>No setup found?</Label>
+          <RadioGroup>
+            <RadioLabel>
+              <input
+                type="radio"
+                checked={noSetupFound === true}
+                onChange={() => setNoSetupFound(true)}
+              />
+              Yes
+            </RadioLabel>
+            <RadioLabel>
+              <input
+                type="radio"
+                checked={noSetupFound === false}
+                onChange={() => setNoSetupFound(false)}
+              />
+              No
+            </RadioLabel>
+          </RadioGroup>
+        </FormGroup>
+
+        <FormGroup>
           <Label>Is there an obvious liq sweep?</Label>
           <RadioGroup>
             <RadioLabel>
@@ -213,6 +266,7 @@ const BacktestForm: React.FC = () => {
                 type="radio"
                 checked={hasLiqSweep === true}
                 onChange={() => setHasLiqSweep(true)}
+                disabled={noSetupFound}
               />
               Yes
             </RadioLabel>
@@ -221,6 +275,7 @@ const BacktestForm: React.FC = () => {
                 type="radio"
                 checked={hasLiqSweep === false}
                 onChange={() => setHasLiqSweep(false)}
+                disabled={noSetupFound}
               />
               No
             </RadioLabel>
@@ -239,7 +294,8 @@ const BacktestForm: React.FC = () => {
             timeCaption="Time"
             dateFormat="yyyy-MM-dd HH:mm"
             className="form-control"
-            customInput={<Input />}
+            customInput={<Input disabled={noSetupFound} />}
+            disabled={noSetupFound}
           />
         </FormGroup>
 
@@ -252,6 +308,34 @@ const BacktestForm: React.FC = () => {
             max="10"
             value={obviousnessRating}
             onChange={(e) => setObviousnessRating(parseInt(e.target.value))}
+            disabled={noSetupFound}
+          />
+        </FormGroup>
+
+        <FormGroup>
+          <Label htmlFor="liqSwingType">Liquidity Swing Type:</Label>
+          <Select
+            id="liqSwingType"
+            value={liqSwingType}
+            onChange={(e) => setLiqSwingType(e.target.value)}
+            disabled={noSetupFound}
+          >
+            <option value="PDH/PDL">PDH/PDL</option>
+            <option value="Asia Low/High">Asia Low/High</option>
+            <option value="Other">Other</option>
+          </Select>
+        </FormGroup>
+
+        <FormGroup>
+          <Label htmlFor="convincingRating">How convincing is the liq sweep (1-10):</Label>
+          <Input
+            id="convincingRating"
+            type="number"
+            min="1"
+            max="10"
+            value={convincingRating}
+            onChange={(e) => setConvincingRating(parseInt(e.target.value))}
+            disabled={noSetupFound}
           />
         </FormGroup>
 
@@ -267,7 +351,8 @@ const BacktestForm: React.FC = () => {
             timeCaption="Time"
             dateFormat="HH:mm"
             className="form-control"
-            customInput={<Input />}
+            customInput={<Input disabled={noSetupFound} />}
+            disabled={noSetupFound}
           />
         </FormGroup>
 
@@ -279,6 +364,7 @@ const BacktestForm: React.FC = () => {
                 type="radio"
                 checked={timeframe === '1m'}
                 onChange={() => setTimeframe('1m')}
+                disabled={noSetupFound}
               />
               1m
             </RadioLabel>
@@ -287,6 +373,7 @@ const BacktestForm: React.FC = () => {
                 type="radio"
                 checked={timeframe === '5m'}
                 onChange={() => setTimeframe('5m')}
+                disabled={noSetupFound}
               />
               5m
             </RadioLabel>
@@ -301,6 +388,7 @@ const BacktestForm: React.FC = () => {
                 type="radio"
                 checked={isProtectedSwing === true}
                 onChange={() => setIsProtectedSwing(true)}
+                disabled={noSetupFound}
               />
               Yes
             </RadioLabel>
@@ -309,6 +397,7 @@ const BacktestForm: React.FC = () => {
                 type="radio"
                 checked={isProtectedSwing === false}
                 onChange={() => setIsProtectedSwing(false)}
+                disabled={noSetupFound}
               />
               No
             </RadioLabel>
@@ -323,6 +412,7 @@ const BacktestForm: React.FC = () => {
                 type="radio"
                 checked={didPriceExpand === true}
                 onChange={() => setDidPriceExpand(true)}
+                disabled={noSetupFound}
               />
               Yes
             </RadioLabel>
@@ -331,6 +421,7 @@ const BacktestForm: React.FC = () => {
                 type="radio"
                 checked={didPriceExpand === false}
                 onChange={() => setDidPriceExpand(false)}
+                disabled={noSetupFound}
               />
               No
             </RadioLabel>
@@ -345,6 +436,7 @@ const BacktestForm: React.FC = () => {
             min="0"
             value={pipsFromSwingLow}
             onChange={(e) => setPipsFromSwingLow(parseInt(e.target.value))}
+            disabled={noSetupFound}
           />
         </FormGroup>
 
@@ -356,6 +448,18 @@ const BacktestForm: React.FC = () => {
             min="0"
             value={pipsFromMSS}
             onChange={(e) => setPipsFromMSS(parseInt(e.target.value))}
+            disabled={noSetupFound}
+          />
+        </FormGroup>
+
+        <FormGroup>
+          <Label htmlFor="chartUrl">Chart URL:</Label>
+          <Input
+            id="chartUrl"
+            type="url"
+            placeholder="https://example.com/chart"
+            value={chartUrl}
+            onChange={(e) => setChartUrl(e.target.value)}
           />
         </FormGroup>
 

@@ -133,6 +133,27 @@ const ClearFilterButton = styled.button`
   }
 `;
 
+const ChartLink = styled.a`
+  color: #007bff;
+  text-decoration: none;
+  font-weight: 500;
+  
+  &:hover {
+    text-decoration: underline;
+    color: #0056b3;
+  }
+`;
+
+const GreenText = styled.span`
+  color: #28a745;
+  font-weight: 500;
+`;
+
+const RedText = styled.span`
+  color: #dc3545;
+  font-weight: 500;
+`;
+
 const BacktestList: React.FC = () => {
   const { state, deleteBacktest } = useBacktest();
   const { filterDate, setFilterDate } = useFilter();
@@ -222,6 +243,7 @@ const BacktestList: React.FC = () => {
               <tr>
                 <TableHeader>Backtest Date</TableHeader>
                 <TableHeader>Performed</TableHeader>
+                <TableHeader>No Setup</TableHeader>
                 <TableHeader>Liq Sweep</TableHeader>
                 <TableHeader>Swing Time</TableHeader>
                 <TableHeader>Obviousness</TableHeader>
@@ -231,6 +253,9 @@ const BacktestList: React.FC = () => {
                 <TableHeader>Price Expanded</TableHeader>
                 <TableHeader>Pips From Swing</TableHeader>
                 <TableHeader>Pips From MSS</TableHeader>
+                <TableHeader>Chart</TableHeader>
+                <TableHeader>Liq Swing Type</TableHeader>
+                <TableHeader>Convincing</TableHeader>
                 {!isProduction && <TableHeader>Actions</TableHeader>}
               </tr>
             </TableHead>
@@ -239,15 +264,44 @@ const BacktestList: React.FC = () => {
                 <TableRow key={backtest.id}>
                   <TableCell>{format(parseISO(backtest.backtestDate), 'MMM dd, yyyy')}</TableCell>
                   <TableCell>{format(parseISO(backtest.datePerformed), 'MMM dd, yyyy')}</TableCell>
-                  <TableCell>{backtest.hasLiqSweep ? 'Yes' : 'No'}</TableCell>
-                  <TableCell>{backtest.swingFormationTime}</TableCell>
-                  <TableCell>{backtest.obviousnessRating}/10</TableCell>
-                  <TableCell>{backtest.mssTime}</TableCell>
-                  <TableCell>{backtest.timeframe}</TableCell>
-                  <TableCell>{backtest.isProtectedSwing ? 'Yes' : 'No'}</TableCell>
-                  <TableCell>{backtest.didPriceExpand ? 'Yes' : 'No'}</TableCell>
-                  <TableCell>{backtest.pipsFromSwingLow}</TableCell>
-                  <TableCell>{backtest.pipsFromMSS}</TableCell>
+                  <TableCell>
+                    {backtest.noSetupFound ? 
+                      <RedText>Yes</RedText> : 
+                      'No'
+                    }
+                  </TableCell>
+                  <TableCell>
+                    {backtest.noSetupFound ? '—' : (backtest.hasLiqSweep ? 'Yes' : 'No')}
+                  </TableCell>
+                  <TableCell>{backtest.noSetupFound ? '—' : backtest.swingFormationTime}</TableCell>
+                  <TableCell>{backtest.noSetupFound ? '—' : `${backtest.obviousnessRating}/10`}</TableCell>
+                  <TableCell>{backtest.noSetupFound ? '—' : backtest.mssTime}</TableCell>
+                  <TableCell>{backtest.noSetupFound ? '—' : backtest.timeframe}</TableCell>
+                  <TableCell>
+                    {backtest.noSetupFound ? '—' : (
+                      backtest.isProtectedSwing ? 
+                        <GreenText>Yes</GreenText> : 
+                        <RedText>No</RedText>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {backtest.noSetupFound ? '—' : (backtest.didPriceExpand ? 'Yes' : 'No')}
+                  </TableCell>
+                  <TableCell>{backtest.noSetupFound ? '—' : backtest.pipsFromSwingLow}</TableCell>
+                  <TableCell>{backtest.noSetupFound ? '—' : backtest.pipsFromMSS}</TableCell>
+                  <TableCell>
+                    {backtest.chartUrl ? (
+                      <ChartLink 
+                        href={backtest.chartUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                      >
+                        Chart
+                      </ChartLink>
+                    ) : '—'}
+                  </TableCell>
+                  <TableCell>{backtest.noSetupFound ? '—' : (backtest.liqSwingType || '—')}</TableCell>
+                  <TableCell>{backtest.noSetupFound ? '—' : (backtest.convincingRating ? `${backtest.convincingRating}/10` : '—')}</TableCell>
                   {!isProduction && (
                     <TableCell>
                       <ActionButton onClick={() => handleDeleteBacktest(backtest.id)}>

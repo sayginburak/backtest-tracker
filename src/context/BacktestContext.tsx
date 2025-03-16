@@ -31,10 +31,44 @@ const BacktestContext = createContext<BacktestContextType | undefined>(undefined
 
 // Provider component
 export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  // Migrate existing backtest data to include new fields
+  const migrateBacktestData = (currentState: BacktestState): BacktestState => {
+    const updatedState = { ...currentState };
+    let dataUpdated = false;
+    
+    // Add noSetupFound field to all backtests
+    Object.keys(updatedState.dailyProgress).forEach(date => {
+      const day = updatedState.dailyProgress[date];
+      
+      day.backtests = day.backtests.map(backtest => {
+        if (!('noSetupFound' in backtest)) {
+          dataUpdated = true;
+          return { 
+            ...backtest as any, 
+            noSetupFound: false 
+          } as Backtest;
+        }
+        return backtest;
+      });
+    });
+    
+    if (dataUpdated) {
+      console.log('Migrated backtest data to include noSetupFound field');
+      updatedState.lastUpdated = Date.now().toString();
+    }
+    
+    return updatedState;
+  };
+
   // Load initial state from localStorage
   const [state, setState] = useState<BacktestState>(() => {
     const savedData = localStorage.getItem('backtestData');
-    return savedData ? JSON.parse(savedData) : initialState;
+    let loadedState = savedData ? JSON.parse(savedData) : initialState;
+    
+    // Migrate existing data to include noSetupFound field
+    loadedState = migrateBacktestData(loadedState);
+    
+    return loadedState;
   });
 
   // Save state to localStorage whenever it changes
