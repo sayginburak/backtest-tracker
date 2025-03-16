@@ -1,5 +1,5 @@
 {
-  "version": "1742150501377",
+  "version": "1742161666818",
   "data": {
     "dailyProgress": {
       "2025-03-11": {
@@ -20,7 +20,8 @@
             "chartUrl": "https://www.tradingview.com/x/r4vLhaVI/",
             "liqSwingType": "Asia Low/High",
             "convincingRating": 6,
-            "id": "1742137061435-9e07und"
+            "id": "1742137061435-9e07und",
+            "noSetupFound": false
           },
           {
             "backtestDate": "2022-05-03",
@@ -37,7 +38,8 @@
             "chartUrl": "https://www.tradingview.com/x/pDG34LyX/",
             "liqSwingType": "Other",
             "convincingRating": 8,
-            "id": "1742137235129-96f4j72"
+            "id": "1742137235129-96f4j72",
+            "noSetupFound": false
           },
           {
             "backtestDate": "2022-05-04",
@@ -54,7 +56,8 @@
             "chartUrl": "https://www.tradingview.com/x/2mfFzgZm/",
             "liqSwingType": "PDH/PDL",
             "convincingRating": 10,
-            "id": "1742137376631-nqlhx7x"
+            "id": "1742137376631-nqlhx7x",
+            "noSetupFound": false
           },
           {
             "backtestDate": "2022-05-05",
@@ -71,7 +74,8 @@
             "chartUrl": "https://www.tradingview.com/x/eYlRGjq0/",
             "liqSwingType": "Asia Low/High",
             "convincingRating": 6,
-            "id": "1742150229092-dc9dp7g"
+            "id": "1742150229092-dc9dp7g",
+            "noSetupFound": false
           },
           {
             "backtestDate": "2022-05-06",
@@ -88,14 +92,345 @@
             "chartUrl": "https://www.tradingview.com/x/CQ5M4iuk/",
             "liqSwingType": "PDH/PDL",
             "convincingRating": 5,
-            "id": "1742150437565-3hxezd8"
+            "id": "1742150437565-3hxezd8",
+            "noSetupFound": false
           }
         ],
         "isComplete": true
+      },
+      "2025-03-12": {
+        "date": "2025-03-12",
+        "backtests": [
+          {
+            "backtestDate": "2022-05-09",
+            "datePerformed": "2025-03-12",
+            "hasLiqSweep": true,
+            "swingFormationTime": "02:55",
+            "obviousnessRating": 10,
+            "mssTime": "02:00",
+            "timeframe": "5m",
+            "isProtectedSwing": false,
+            "didPriceExpand": true,
+            "pipsFromSwingLow": 145,
+            "pipsFromMSS": 117,
+            "chartUrl": "https://www.tradingview.com/x/nSP3uyfw/",
+            "liqSwingType": "PDH/PDL",
+            "convincingRating": 9,
+            "id": "1742154786452-48l9n5c",
+            "noSetupFound": false
+          },
+          {
+            "backtestDate": "2022-05-10",
+            "datePerformed": "2025-03-12",
+            "hasLiqSweep": true,
+            "swingFormationTime": "22:35",
+            "obviousnessRating": 7,
+            "mssTime": "02:05",
+            "timeframe": "5m",
+            "isProtectedSwing": true,
+            "didPriceExpand": true,
+            "pipsFromSwingLow": 84,
+            "pipsFromMSS": 68,
+            "chartUrl": "https://www.tradingview.com/x/kCkhEPmu/",
+            "liqSwingType": "Asia Low/High",
+            "convincingRating": 7,
+            "id": "1742154997456-bwaez2q",
+            "noSetupFound": false
+          },
+          {
+            "backtestDate": "2022-05-11",
+            "datePerformed": "2025-03-12",
+            "hasLiqSweep": true,
+            "swingFormationTime": "23:45",
+            "obviousnessRating": 4,
+            "mssTime": "04:20",
+            "timeframe": "5m",
+            "isProtectedSwing": true,
+            "didPriceExpand": true,
+            "pipsFromSwingLow": 67,
+            "pipsFromMSS": 37,
+            "chartUrl": "https://www.tradingview.com/x/hhlD3jzZ/",
+            "liqSwingType": "Other",
+            "convincingRating": 7,
+            "id": "1742155359183-lqz3uy3",
+            "noSetupFound": false
+          },
+          {
+            "backtestDate": "2022-05-13",
+            "datePerformed": "2025-03-12",
+            "noSetupFound": false,
+            "hasLiqSweep": true,
+            "swingFormationTime": "02:15",
+            "obviousnessRating": 6,
+            "mssTime": "03:25",
+            "timeframe": "5m",
+            "isProtectedSwing": false,
+            "didPriceExpand": false,
+            "pipsFromSwingLow": 0,
+            "pipsFromMSS": 0,
+            "chartUrl": "https://www.tradingview.com/x/Ho8UveBZ/",
+            "liqSwingType": "Other",
+            "convincingRating": 7,
+            "id": "1742157150381-8743zl6"
+          },
+          {
+            "backtestDate": "2022-05-12",
+            "datePerformed": "2025-03-12",
+            "noSetupFound": true,
+            "hasLiqSweep": false,
+            "swingFormationTime": "",
+            "obviousnessRating": 0,
+            "mssTime": "",
+            "timeframe": "5m",
+            "isProtectedSwing": false,
+            "didPriceExpand": false,
+            "pipsFromSwingLow": 0,
+            "pipsFromMSS": 0,
+            "chartUrl": "https://www.tradingview.com/x/P4dcIVkK/",
+            "liqSwingType": "",
+            "convincingRating": 0,
+            "id": "1742157259133-22eflnc"
+          }
+        ],
+        "isComplete": true
+      },
+      "2025-03-13": {
+        "date": "2025-03-13",
+        "backtests": [
+          {
+            "backtestDate": "2022-05-16",
+            "datePerformed": "2025-03-13",
+            "noSetupFound": true,
+            "hasLiqSweep": false,
+            "swingFormationTime": "",
+            "obviousnessRating": 0,
+            "mssTime": "",
+            "timeframe": "5m",
+            "isProtectedSwing": false,
+            "didPriceExpand": false,
+            "pipsFromSwingLow": 0,
+            "pipsFromMSS": 0,
+            "chartUrl": "https://www.tradingview.com/x/xjCkqT2P/",
+            "liqSwingType": "",
+            "convincingRating": 0,
+            "id": "1742158601020-4d6u5kw"
+          },
+          {
+            "backtestDate": "2022-05-17",
+            "datePerformed": "2025-03-13",
+            "noSetupFound": true,
+            "hasLiqSweep": false,
+            "swingFormationTime": "",
+            "obviousnessRating": 0,
+            "mssTime": "",
+            "timeframe": "5m",
+            "isProtectedSwing": false,
+            "didPriceExpand": false,
+            "pipsFromSwingLow": 0,
+            "pipsFromMSS": 0,
+            "chartUrl": "https://www.tradingview.com/x/By3spxcU/",
+            "liqSwingType": "",
+            "convincingRating": 0,
+            "id": "1742158649389-f4yh2pr"
+          },
+          {
+            "backtestDate": "2022-05-18",
+            "datePerformed": "2025-03-13",
+            "noSetupFound": true,
+            "hasLiqSweep": false,
+            "swingFormationTime": "",
+            "obviousnessRating": 0,
+            "mssTime": "",
+            "timeframe": "5m",
+            "isProtectedSwing": false,
+            "didPriceExpand": false,
+            "pipsFromSwingLow": 0,
+            "pipsFromMSS": 0,
+            "chartUrl": "https://www.tradingview.com/x/sREgqx6d/",
+            "liqSwingType": "",
+            "convincingRating": 0,
+            "id": "1742158684000-wy1kzxu"
+          },
+          {
+            "backtestDate": "2022-05-19",
+            "datePerformed": "2025-03-13",
+            "noSetupFound": false,
+            "hasLiqSweep": true,
+            "swingFormationTime": "21:45",
+            "obviousnessRating": 6,
+            "mssTime": "03:30",
+            "timeframe": "5m",
+            "isProtectedSwing": true,
+            "didPriceExpand": true,
+            "pipsFromSwingLow": 186,
+            "pipsFromMSS": 170,
+            "chartUrl": "https://www.tradingview.com/x/RjVcK8WO/",
+            "liqSwingType": "Asia Low/High",
+            "convincingRating": 6,
+            "id": "1742158926557-pyvzlix"
+          },
+          {
+            "backtestDate": "2022-05-20",
+            "datePerformed": "2025-03-13",
+            "noSetupFound": true,
+            "hasLiqSweep": false,
+            "swingFormationTime": "",
+            "obviousnessRating": 0,
+            "mssTime": "",
+            "timeframe": "5m",
+            "isProtectedSwing": false,
+            "didPriceExpand": false,
+            "pipsFromSwingLow": 0,
+            "pipsFromMSS": 0,
+            "chartUrl": "https://www.tradingview.com/x/Z0jilhQB/",
+            "liqSwingType": "",
+            "convincingRating": 0,
+            "id": "1742159304241-ujeqmww"
+          }
+        ],
+        "isComplete": true
+      },
+      "2025-03-14": {
+        "date": "2025-03-14",
+        "backtests": [
+          {
+            "backtestDate": "2022-05-23",
+            "datePerformed": "2025-03-14",
+            "noSetupFound": true,
+            "hasLiqSweep": false,
+            "swingFormationTime": "",
+            "obviousnessRating": 0,
+            "mssTime": "",
+            "timeframe": "5m",
+            "isProtectedSwing": false,
+            "didPriceExpand": false,
+            "pipsFromSwingLow": 0,
+            "pipsFromMSS": 0,
+            "chartUrl": "https://www.tradingview.com/x/E9u4ugrw/",
+            "liqSwingType": "",
+            "convincingRating": 0,
+            "id": "1742159385074-cp0okpi"
+          },
+          {
+            "backtestDate": "2022-05-24",
+            "datePerformed": "2025-03-14",
+            "noSetupFound": false,
+            "hasLiqSweep": true,
+            "swingFormationTime": "09:52",
+            "obviousnessRating": 6,
+            "mssTime": "04:15",
+            "timeframe": "5m",
+            "isProtectedSwing": true,
+            "didPriceExpand": true,
+            "pipsFromSwingLow": 126,
+            "pipsFromMSS": 97,
+            "chartUrl": "https://www.tradingview.com/x/rb5olclF/",
+            "liqSwingType": "Other",
+            "convincingRating": 7,
+            "id": "1742159737676-4kpywm4"
+          },
+          {
+            "backtestDate": "2022-05-25",
+            "datePerformed": "2025-03-14",
+            "noSetupFound": false,
+            "hasLiqSweep": true,
+            "swingFormationTime": "12:15",
+            "obviousnessRating": 9,
+            "mssTime": "03:15",
+            "timeframe": "5m",
+            "isProtectedSwing": true,
+            "didPriceExpand": true,
+            "pipsFromSwingLow": 79,
+            "pipsFromMSS": 51,
+            "chartUrl": "https://www.tradingview.com/x/ScrOtMXS/",
+            "liqSwingType": "Other",
+            "convincingRating": 9,
+            "id": "1742159943107-iczzzvg"
+          },
+          {
+            "backtestDate": "2022-05-26",
+            "datePerformed": "2025-03-14",
+            "noSetupFound": false,
+            "hasLiqSweep": true,
+            "swingFormationTime": "17:00",
+            "obviousnessRating": 6,
+            "mssTime": "03:05",
+            "timeframe": "5m",
+            "isProtectedSwing": true,
+            "didPriceExpand": true,
+            "pipsFromSwingLow": 69,
+            "pipsFromMSS": 52,
+            "chartUrl": "https://www.tradingview.com/x/0YjXljrz/",
+            "liqSwingType": "Asia Low/High",
+            "convincingRating": 6,
+            "id": "1742160202173-dqiy7s6"
+          },
+          {
+            "backtestDate": "2022-05-27",
+            "datePerformed": "2025-03-14",
+            "noSetupFound": true,
+            "hasLiqSweep": false,
+            "swingFormationTime": "",
+            "obviousnessRating": 0,
+            "mssTime": "",
+            "timeframe": "5m",
+            "isProtectedSwing": false,
+            "didPriceExpand": false,
+            "pipsFromSwingLow": 0,
+            "pipsFromMSS": 0,
+            "chartUrl": "https://www.tradingview.com/x/ZlpcXqld/",
+            "liqSwingType": "",
+            "convincingRating": 0,
+            "id": "1742160288996-rsvgmw8"
+          }
+        ],
+        "isComplete": true
+      },
+      "2025-03-17": {
+        "date": "2025-03-17",
+        "backtests": [
+          {
+            "backtestDate": "2022-05-30",
+            "datePerformed": "2025-03-17",
+            "noSetupFound": true,
+            "hasLiqSweep": false,
+            "swingFormationTime": "",
+            "obviousnessRating": 0,
+            "mssTime": "",
+            "timeframe": "5m",
+            "isProtectedSwing": false,
+            "didPriceExpand": false,
+            "pipsFromSwingLow": 0,
+            "pipsFromMSS": 0,
+            "chartUrl": "https://www.tradingview.com/x/J8xvYDhB/",
+            "liqSwingType": "",
+            "convincingRating": 0,
+            "id": "1742161128224-v4ykoer"
+          },
+          {
+            "backtestDate": "2022-05-31",
+            "datePerformed": "2025-03-17",
+            "noSetupFound": false,
+            "hasLiqSweep": true,
+            "swingFormationTime": "09:00",
+            "obviousnessRating": 8,
+            "mssTime": "04:10",
+            "timeframe": "5m",
+            "isProtectedSwing": false,
+            "didPriceExpand": false,
+            "pipsFromSwingLow": 40,
+            "pipsFromMSS": 7,
+            "chartUrl": "https://www.tradingview.com/x/pUNqrPKB/",
+            "liqSwingType": "Asia Low/High",
+            "convincingRating": 8,
+            "id": "1742161283131-d19fi5z"
+          }
+        ],
+        "isComplete": false
       }
     },
     "currentStreak": 0,
-    "totalBacktests": 5,
-    "lastUpdated": "1742150437565"
+    "totalBacktests": 22,
+    "lastUpdated": "1742161283131"
   }
 }
