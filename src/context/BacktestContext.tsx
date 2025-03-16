@@ -244,7 +244,7 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   };
 
-  // Sync with repository data - optimized to prevent unnecessary updates
+  // Sync with repository data - optimized to prevent unnecessary updates and caching
   const syncWithRepo = async (force: boolean = false): Promise<SyncResult> => {
     try {
       // Prevent multiple syncs
@@ -267,19 +267,25 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
         base = './';
       }
       
-      // Add cache-busting parameter only if force is true
-      const url = force 
-        ? `${base}data/backtests.json?t=${Date.now()}` 
+      // ALWAYS add cache-busting parameter in production or when force=true
+      // This prevents browsers from serving stale data
+      const isProd = import.meta.env.PROD;
+      const needsCacheBusting = isProd || force;
+      const cacheBuster = Date.now();
+      const url = needsCacheBusting 
+        ? `${base}data/backtests.json?t=${cacheBuster}`
         : `${base}data/backtests.json`;
       
       console.log(`[Sync] Fetching data from: ${url}`);
       
-      // Configure fetch to prevent caching if force is true
-      const fetchOptions: RequestInit = force ? {
+      // Configure fetch options to prevent caching if needed
+      const fetchOptions: RequestInit = needsCacheBusting ? {
+        method: 'GET',
         cache: 'no-store',
         headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
         }
       } : {};
       

@@ -3,7 +3,7 @@ import { useBacktest } from '../context/BacktestContext';
 
 // Version identifier for the application code
 // This should only be incremented when there's a change that requires a client refresh
-const APP_VERSION = '1.0.5';
+const APP_VERSION = '1.0.6';
 const LAST_VERSION_KEY = 'backtest_app_version';
 const LAST_SYNC_KEY = 'backtest_last_sync_time';
 
@@ -78,8 +78,9 @@ const AutoSync: React.FC = () => {
         syncInProgressRef.current = true;
         console.log(`[AutoSync] Checking for data updates... (in ${isProd ? 'production' : 'development'})`);
         
-        // In production, we want to check version number but not bypass cache every time
-        const result = await syncWithRepo(isProd ? false : false);
+        // ALWAYS use force=true in production to bypass cache
+        // In development, we still use the less aggressive approach
+        const result = await syncWithRepo(isProd ? true : false);
         
         if (result.success) {
           console.log('[AutoSync] Sync completed successfully');
@@ -99,7 +100,7 @@ const AutoSync: React.FC = () => {
     
     // Only sync if needed
     if (shouldSync()) {
-      console.log(`[AutoSync] Performing data sync (${isProd ? 'Production mode - always sync' : 'Development mode - sync if needed'})`);
+      console.log(`[AutoSync] Performing data sync (${isProd ? 'Production mode - always sync with cache busting' : 'Development mode - sync if needed'})`);
       performSync();
     } else {
       console.log('[AutoSync] Skipping sync - data is recent (Development mode)');
