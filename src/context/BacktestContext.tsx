@@ -244,11 +244,12 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   };
 
-  // Sync with repository data - modified to work in both development and production
+  // Sync with repository data - optimized to prevent unnecessary updates
   const syncWithRepo = async (force: boolean = false): Promise<SyncResult> => {
     try {
-      // Simple flag to prevent multiple syncs
+      // Prevent multiple syncs
       if ((window as any).__syncInProgress) {
+        console.log('[Sync] Sync already in progress, skipping');
         return { success: false, message: "Sync already in progress" };
       }
       
@@ -266,23 +267,26 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
         base = './';
       }
       
-      // Add cache-busting parameter
-      const cacheBuster = Date.now();
-      const url = `${base}data/backtests.json?t=${cacheBuster}`;
+      // Add cache-busting parameter only if force is true
+      const url = force 
+        ? `${base}data/backtests.json?t=${Date.now()}` 
+        : `${base}data/backtests.json`;
       
-      // Single fetch attempt
-      console.log(`Syncing data from: ${url}`);
-      const response = await fetch(url, {
-        // Ensure we're not getting cached responses
+      console.log(`[Sync] Fetching data from: ${url}`);
+      
+      // Configure fetch to prevent caching if force is true
+      const fetchOptions: RequestInit = force ? {
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
         }
-      });
+      } : {};
+      
+      const response = await fetch(url, fetchOptions);
       
       if (!response.ok) {
-        console.warn(`Sync failed: ${response.status} ${response.statusText}`);
+        console.warn(`[Sync] Failed: ${response.status} ${response.statusText}`);
         (window as any).__syncInProgress = false;
         return { 
           success: false, 
@@ -294,78 +298,88 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
       const repoData = await response.json();
       const repoState = repoData.data;
       
-      // Validate data before processing
-      try {
-        // Validate dates in the data
-        Object.keys(repoState.dailyProgress).forEach(dateKey => {
-          const day = repoState.dailyProgress[dateKey];
-          
-          // Validate and filter out entries with invalid dates
-          day.backtests = day.backtests.filter((backtest: any) => {
-            try {
-              // Check if dates are valid by trying to parse them
-              if (backtest.backtestDate) {
-                const date = new Date(backtest.backtestDate);
-                if (isNaN(date.getTime())) {
-                  console.error(`Invalid backtestDate: ${backtest.backtestDate} - Skipping entry`);
-                  return false;
-                }
-              }
-              
-              if (backtest.datePerformed) {
-                const date = new Date(backtest.datePerformed);
-                if (isNaN(date.getTime())) {
-                  console.error(`Invalid datePerformed: ${backtest.datePerformed} - Skipping entry`);
-                  return false;
-                }
-              }
-              
-              // Entry passed validation
-              return true;
-            } catch (error) {
-              console.error(`Error validating backtest: ${error}`);
-              return false;
-            }
-          });
-        });
-      } catch (error) {
-        console.error("Data validation error:", error);
-        // Continue with sync despite validation errors
-      }
+      // Validate and clean the data before processing
+      const cleanedData = cleanAndValidateData(repoState);
       
       // Only update if there's a meaningful difference or force is true
       const currentVersion = state.lastUpdated || '0';
-      if (force || repoData.version > currentVersion) {
-        console.log(`Updating from version ${currentVersion} to ${repoData.version}`);
+      const repoVersion = repoData.version || '0';
+      
+      if (force || repoVersion > currentVersion) {
+        console.log(`[Sync] Updating: ${currentVersion} → ${repoVersion}`);
         
         // Calculate actual backtest count from repo data
         let repoBacktestCount = 0;
-        Object.values(repoState.dailyProgress).forEach((day: any) => {
+        Object.values(cleanedData.dailyProgress).forEach((day: any) => {
           repoBacktestCount += day.backtests.length;
         });
         
         // Update state with the correct count
         setState({
-          ...repoState,
+          ...cleanedData,
           totalBacktests: repoBacktestCount,
-          lastUpdated: repoData.version
+          lastUpdated: repoVersion
         });
         
         (window as any).__syncInProgress = false;
         return { success: true, message: "Data updated from repository" };
       }
       
-      console.log("Local data is already up-to-date");
+      console.log("[Sync] Local data is already up-to-date");
       (window as any).__syncInProgress = false;
       return { success: true, message: "Local data is up to date" };
     } catch (error) {
-      console.error("Error during sync:", error);
+      console.error("[Sync] Error:", error);
       (window as any).__syncInProgress = false;
       return { 
         success: false, 
-        message: "Error syncing with repository" 
+        message: `Error syncing with repository: ${error}` 
       };
     }
+  };
+  
+  // Helper function to clean and validate data
+  const cleanAndValidateData = (data: any): BacktestState => {
+    const cleanedData = { ...data };
+    
+    try {
+      // Validate dates in the data
+      Object.keys(cleanedData.dailyProgress).forEach(dateKey => {
+        const day = cleanedData.dailyProgress[dateKey];
+        
+        // Validate and filter out entries with invalid dates
+        day.backtests = day.backtests.filter((backtest: any) => {
+          try {
+            // Check if dates are valid by trying to parse them
+            if (backtest.backtestDate) {
+              const date = new Date(backtest.backtestDate);
+              if (isNaN(date.getTime())) {
+                console.error(`[Sync] Invalid backtestDate: ${backtest.backtestDate} - Skipping entry`);
+                return false;
+              }
+            }
+            
+            if (backtest.datePerformed) {
+              const date = new Date(backtest.datePerformed);
+              if (isNaN(date.getTime())) {
+                console.error(`[Sync] Invalid datePerformed: ${backtest.datePerformed} - Skipping entry`);
+                return false;
+              }
+            }
+            
+            // Entry passed validation
+            return true;
+          } catch (error) {
+            console.error(`[Sync] Error validating backtest: ${error}`);
+            return false;
+          }
+        });
+      });
+    } catch (error) {
+      console.error("[Sync] Data validation error:", error);
+    }
+    
+    return cleanedData;
   };
 
   return (

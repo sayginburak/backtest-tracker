@@ -1,5 +1,5 @@
 {
-  "version": "1742161666818",
+  "version": "1742164518648",
   "data": {
     "dailyProgress": {
       "2025-03-11": {
@@ -424,24 +424,6 @@
             "liqSwingType": "Asia Low/High",
             "convincingRating": 8,
             "id": "1742161283131-d19fi5z"
-          },
-          {
-            "backtestDate": "2022-06-31",
-            "datePerformed": "2025-03-17",
-            "noSetupFound": false,
-            "hasLiqSweep": true,
-            "swingFormationTime": "09:00",
-            "obviousnessRating": 8,
-            "mssTime": "04:10",
-            "timeframe": "5m",
-            "isProtectedSwing": false,
-            "didPriceExpand": false,
-            "pipsFromSwingLow": 40,
-            "pipsFromMSS": 7,
-            "chartUrl": "https://www.tradingview.com/x/pUNqrPKB/",
-            "liqSwingType": "Asia Low/High",
-            "convincingRating": 8,
-            "id": "1742161283131-d19fi5z"
           }
         ],
         "isComplete": false
@@ -449,6 +431,6 @@
     },
     "currentStreak": 0,
     "totalBacktests": 22,
-    "lastUpdated": "1742161283131"
+    "lastUpdated": "1742161666819"
   }
 }

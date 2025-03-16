@@ -120,22 +120,55 @@ const DataExportImport: React.FC = () => {
   const [lastSyncCheck, setLastSyncCheck] = useState<Date | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // Check for repo updates when component mounts
+  // Check for repo updates when component mounts, but don't auto-fetch
   useEffect(() => {
-    checkForUpdates();
-  }, []);
+    // Only check when the sync status hasn't been set yet
+    if (!syncStatus) {
+      const lastSync = localStorage.getItem('backtest_last_sync_time');
+      const lastSyncDate = lastSync ? new Date(parseInt(lastSync)) : null;
+      
+      if (lastSyncDate) {
+        setLastSyncCheck(lastSyncDate);
+        
+        // If we synced recently (within 24 hours), don't check again automatically
+        const hoursSinceLastSync = (Date.now() - lastSyncDate.getTime()) / (1000 * 60 * 60);
+        
+        if (hoursSinceLastSync < 24) {
+          setSyncStatus({ 
+            success: true, 
+            message: `Last synced ${Math.round(hoursSinceLastSync)} hours ago` 
+          });
+          return;
+        }
+      }
+      
+      // Don't automatically sync - just show a message that it's available
+      setSyncStatus({ 
+        success: true, 
+        message: "Click 'Sync with Repository' to check for updates" 
+      });
+    }
+  }, [syncStatus]);
 
-  const checkForUpdates = async () => {
+  const checkForUpdates = async (force: boolean = false) => {
     try {
       setIsSyncing(true);
-      const result = await syncWithRepo();
+      setSyncStatus({ success: true, message: "Syncing in progress..." });
+      
+      const result = await syncWithRepo(force);
       setSyncStatus(result);
       setLastSyncCheck(new Date());
+      
+      // Update localStorage to mark the last sync time
+      localStorage.setItem('backtest_last_sync_time', Date.now().toString());
+      
       setIsSyncing(false);
+      return result;
     } catch (error) {
       console.error("Error checking for updates", error);
-      setSyncStatus({ success: false, message: "Error checking for updates" });
+      setSyncStatus({ success: false, message: `Error: ${error}` });
       setIsSyncing(false);
+      throw error;
     }
   };
 
@@ -180,22 +213,21 @@ const DataExportImport: React.FC = () => {
 
   const handleManualSync = async () => {
     try {
-      setIsSyncing(true);
-      const result = await syncWithRepo();
-      setSyncStatus(result);
-      setLastSyncCheck(new Date());
+      // Force sync with true parameter
+      const result = await checkForUpdates(true);
       
       if (result.success) {
-        alert('Successfully synchronized with repository data!');
+        if (result.message.includes("up to date")) {
+          alert('Your data is already up to date with the repository.');
+        } else {
+          alert('Successfully synchronized with repository data!');
+        }
       } else {
-        alert(`Sync status: ${result.message}`);
+        alert(`Sync failed: ${result.message}`);
       }
-      setIsSyncing(false);
     } catch (error) {
       console.error("Error during manual sync:", error);
-      setSyncStatus({ success: false, message: "Error during sync" });
       alert('Error during synchronization. Please try again.');
-      setIsSyncing(false);
     }
   };
 

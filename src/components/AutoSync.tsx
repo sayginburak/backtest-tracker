@@ -1,25 +1,32 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useBacktest } from '../context/BacktestContext';
 
 // Version identifier for the application code
-const APP_VERSION = '1.0.2'; // Increment this for forced refreshes
+// This should only be incremented when there's a change that requires a client refresh
+const APP_VERSION = '1.0.3';
 const LAST_VERSION_KEY = 'backtest_app_version';
-const DATA_VERSION_KEY = 'backtest_data_version';
-const CHECK_INTERVAL = 30 * 1000; // 30 seconds - more aggressive!
+const LAST_SYNC_KEY = 'backtest_last_sync_time';
 
-// This component ensures data is always fresh
+// How long to wait before checking for updates again (24 hours)
+const SYNC_INTERVAL = 24 * 60 * 60 * 1000;
+
 const AutoSync: React.FC = () => {
-  const { syncWithRepo, state } = useBacktest();
+  const { syncWithRepo } = useBacktest();
+  const syncInProgressRef = useRef(false);
+  const hasCompletedInitialSyncRef = useRef(false);
   
-  // Handles code version changes (app updates)
+  // Handle app version changes (code updates)
   useEffect(() => {
     const lastVersion = localStorage.getItem(LAST_VERSION_KEY) || '0';
     
     console.log(`[AutoSync] Current app version: ${APP_VERSION}`);
     
+    // Store the current version
     if (lastVersion !== APP_VERSION) {
       localStorage.setItem(LAST_VERSION_KEY, APP_VERSION);
       
+      // Only reload if this isn't the first visit (lastVersion !== '0')
+      // and the version has changed
       if (lastVersion !== '0' && lastVersion !== APP_VERSION) {
         console.log(`[AutoSync] App version changed from ${lastVersion} to ${APP_VERSION}`);
         
@@ -37,69 +44,66 @@ const AutoSync: React.FC = () => {
     }
   }, []);
 
-  // Data sync with clear console output and error handling
+  // Data sync - only on first load and when necessary
   useEffect(() => {
-    // Important! Track the current data version
-    const currentDataVersion = state.lastUpdated || '0';
-    let isInitialSync = true;
+    // Check if we should sync based on time elapsed
+    const shouldSync = () => {
+      const lastSyncTime = localStorage.getItem(LAST_SYNC_KEY);
+      
+      if (!lastSyncTime) {
+        return true; // Always sync if we've never synced before
+      }
+      
+      const lastSync = parseInt(lastSyncTime, 10);
+      const timeSinceLastSync = Date.now() - lastSync;
+      
+      return timeSinceLastSync > SYNC_INTERVAL;
+    };
     
-    // Set initial data version if not exists
-    if (!localStorage.getItem(DATA_VERSION_KEY)) {
-      localStorage.setItem(DATA_VERSION_KEY, currentDataVersion);
-      console.log(`[AutoSync] Initial data version: ${currentDataVersion}`);
-    }
-    
-    // Sync function with better logging and error handling
-    const checkForUpdates = async () => {
+    // Perform sync with controlled logging
+    const performSync = async () => {
+      // Prevent multiple simultaneous syncs
+      if (syncInProgressRef.current || hasCompletedInitialSyncRef.current) {
+        return;
+      }
+      
       try {
+        syncInProgressRef.current = true;
         console.log('[AutoSync] Checking for data updates...');
         
-        // Force sync to always check with server
-        const result = await syncWithRepo(true);
+        const result = await syncWithRepo(false); // Don't force sync every time
         
-        if (!result.success) {
-          console.warn(`[AutoSync] Sync failed: ${result.message}`);
-          return;
-        }
-        
-        // After sync, check if data version changed
-        const newDataVersion = state.lastUpdated || '0';
-        const lastKnownVersion = localStorage.getItem(DATA_VERSION_KEY) || '0';
-        
-        console.log(`[AutoSync] Data version check: current=${newDataVersion}, previous=${lastKnownVersion}`);
-        
-        // Update stored version if changed
-        if (newDataVersion !== lastKnownVersion) {
-          console.log(`[AutoSync] Data updated: ${lastKnownVersion} → ${newDataVersion}`);
-          localStorage.setItem(DATA_VERSION_KEY, newDataVersion);
+        if (result.success) {
+          console.log('[AutoSync] Sync completed successfully');
+          localStorage.setItem(LAST_SYNC_KEY, Date.now().toString());
         } else {
-          console.log('[AutoSync] No data changes detected');
+          console.warn(`[AutoSync] Sync failed: ${result.message}`);
         }
         
-        // Extra info on first sync
-        if (isInitialSync) {
-          console.log('[AutoSync] Initial sync completed successfully');
-          isInitialSync = false;
-        }
+        // Mark that we've completed the initial sync
+        hasCompletedInitialSyncRef.current = true;
       } catch (error) {
-        console.error('[AutoSync] Sync error:', error);
+        console.error('[AutoSync] Error during sync:', error);
+      } finally {
+        syncInProgressRef.current = false;
       }
     };
     
-    // Always check on mount
-    console.log('[AutoSync] Starting immediate data check');
-    checkForUpdates();
+    // Only sync if needed
+    if (shouldSync()) {
+      console.log('[AutoSync] Performing initial data sync');
+      performSync();
+    } else {
+      console.log('[AutoSync] Skipping sync - data is recent');
+      hasCompletedInitialSyncRef.current = true;
+    }
     
-    // Continue checking periodically 
-    const intervalTimer = setInterval(() => {
-      console.log('[AutoSync] Running scheduled data check');
-      checkForUpdates();
-    }, CHECK_INTERVAL);
+    // Cleanup function isn't needed anymore
+    return () => {};
     
-    return () => {
-      clearInterval(intervalTimer);
-    };
-  }, [syncWithRepo, state.lastUpdated]);
+    // This effect should only run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   return null;
 };
