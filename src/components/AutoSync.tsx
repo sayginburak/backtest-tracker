@@ -3,7 +3,7 @@ import { useBacktest } from '../context/BacktestContext';
 
 // Version identifier for the application code
 // This should only be incremented when there's a change that requires a client refresh
-const APP_VERSION = '1.0.4';
+const APP_VERSION = '1.0.5';
 const LAST_VERSION_KEY = 'backtest_app_version';
 const LAST_SYNC_KEY = 'backtest_last_sync_time';
 
