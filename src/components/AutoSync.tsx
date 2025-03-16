@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useBacktest } from '../context/BacktestContext';
 
 // Version identifier for the application code
-const APP_VERSION = '1.0.1'; // Increment this for forced refreshes
+const APP_VERSION = '1.0.2'; // Increment this for forced refreshes
 const LAST_VERSION_KEY = 'backtest_app_version';
 const DATA_VERSION_KEY = 'backtest_data_version';
 const CHECK_INTERVAL = 30 * 1000; // 30 seconds - more aggressive!
@@ -10,8 +10,7 @@ const CHECK_INTERVAL = 30 * 1000; // 30 seconds - more aggressive!
 // This component ensures data is always fresh
 const AutoSync: React.FC = () => {
   const { syncWithRepo, state } = useBacktest();
-  const [isInitialSync, setIsInitialSync] = useState(true);
-
+  
   // Handles code version changes (app updates)
   useEffect(() => {
     const lastVersion = localStorage.getItem(LAST_VERSION_KEY) || '0';
@@ -38,10 +37,11 @@ const AutoSync: React.FC = () => {
     }
   }, []);
 
-  // Data sync with clear console output
+  // Data sync with clear console output and error handling
   useEffect(() => {
     // Important! Track the current data version
     const currentDataVersion = state.lastUpdated || '0';
+    let isInitialSync = true;
     
     // Set initial data version if not exists
     if (!localStorage.getItem(DATA_VERSION_KEY)) {
@@ -49,13 +49,18 @@ const AutoSync: React.FC = () => {
       console.log(`[AutoSync] Initial data version: ${currentDataVersion}`);
     }
     
-    // Sync function with better logging
+    // Sync function with better logging and error handling
     const checkForUpdates = async () => {
       try {
         console.log('[AutoSync] Checking for data updates...');
         
         // Force sync to always check with server
-        await syncWithRepo(true);
+        const result = await syncWithRepo(true);
+        
+        if (!result.success) {
+          console.warn(`[AutoSync] Sync failed: ${result.message}`);
+          return;
+        }
         
         // After sync, check if data version changed
         const newDataVersion = state.lastUpdated || '0';
@@ -74,7 +79,7 @@ const AutoSync: React.FC = () => {
         // Extra info on first sync
         if (isInitialSync) {
           console.log('[AutoSync] Initial sync completed successfully');
-          setIsInitialSync(false);
+          isInitialSync = false;
         }
       } catch (error) {
         console.error('[AutoSync] Sync error:', error);
@@ -94,7 +99,7 @@ const AutoSync: React.FC = () => {
     return () => {
       clearInterval(intervalTimer);
     };
-  }, [syncWithRepo, state.lastUpdated, isInitialSync]);
+  }, [syncWithRepo, state.lastUpdated]);
   
   return null;
 };

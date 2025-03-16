@@ -294,6 +294,45 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
       const repoData = await response.json();
       const repoState = repoData.data;
       
+      // Validate data before processing
+      try {
+        // Validate dates in the data
+        Object.keys(repoState.dailyProgress).forEach(dateKey => {
+          const day = repoState.dailyProgress[dateKey];
+          
+          // Validate and filter out entries with invalid dates
+          day.backtests = day.backtests.filter((backtest: any) => {
+            try {
+              // Check if dates are valid by trying to parse them
+              if (backtest.backtestDate) {
+                const date = new Date(backtest.backtestDate);
+                if (isNaN(date.getTime())) {
+                  console.error(`Invalid backtestDate: ${backtest.backtestDate} - Skipping entry`);
+                  return false;
+                }
+              }
+              
+              if (backtest.datePerformed) {
+                const date = new Date(backtest.datePerformed);
+                if (isNaN(date.getTime())) {
+                  console.error(`Invalid datePerformed: ${backtest.datePerformed} - Skipping entry`);
+                  return false;
+                }
+              }
+              
+              // Entry passed validation
+              return true;
+            } catch (error) {
+              console.error(`Error validating backtest: ${error}`);
+              return false;
+            }
+          });
+        });
+      } catch (error) {
+        console.error("Data validation error:", error);
+        // Continue with sync despite validation errors
+      }
+      
       // Only update if there's a meaningful difference or force is true
       const currentVersion = state.lastUpdated || '0';
       if (force || repoData.version > currentVersion) {

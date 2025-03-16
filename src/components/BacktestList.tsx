@@ -262,8 +262,27 @@ const BacktestList: React.FC = () => {
             <tbody>
               {filteredBacktests.map((backtest) => (
                 <TableRow key={backtest.id}>
-                  <TableCell>{format(parseISO(backtest.backtestDate), 'MMM dd, yyyy')}</TableCell>
-                  <TableCell>{format(parseISO(backtest.datePerformed), 'MMM dd, yyyy')}</TableCell>
+                  <TableCell>
+                    {(() => {
+                      try {
+                        // Check if date is valid by parsing, will throw if invalid
+                        return format(parseISO(backtest.backtestDate), 'MMM dd, yyyy');
+                      } catch (error) {
+                        console.error(`Invalid backtestDate: ${backtest.backtestDate}`, error);
+                        return `Invalid date: ${backtest.backtestDate}`;
+                      }
+                    })()}
+                  </TableCell>
+                  <TableCell>
+                    {(() => {
+                      try {
+                        return format(parseISO(backtest.datePerformed), 'MMM dd, yyyy');
+                      } catch (error) {
+                        console.error(`Invalid datePerformed: ${backtest.datePerformed}`, error);
+                        return `Invalid date: ${backtest.datePerformed}`;
+                      }
+                    })()}
+                  </TableCell>
                   <TableCell>
                     {backtest.noSetupFound ? 
                       <RedText>Yes</RedText> : 
