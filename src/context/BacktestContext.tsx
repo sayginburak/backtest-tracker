@@ -95,7 +95,7 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
   const updateTotalCount = () => {
     let total = 0;
     Object.values(state.dailyProgress).forEach(day => {
-      total += day.backtests.length;
+      total += countUniqueBacktestDates(day.backtests);
     });
     
     if (total !== state.totalBacktests) {
@@ -143,6 +143,12 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
     setState(prev => ({ ...prev, currentStreak: streak }));
   };
 
+  // Helper function to count unique backtest dates
+  const countUniqueBacktestDates = (backtests: Backtest[]): number => {
+    const uniqueDates = new Set(backtests.map(bt => bt.backtestDate));
+    return uniqueDates.size;
+  };
+
   // Add a new backtest
   const addBacktest = (backtestData: Omit<Backtest, 'id'>) => {
     const performDate = backtestData.datePerformed || format(new Date(), 'yyyy-MM-dd');
@@ -157,17 +163,18 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
       };
       
       const updatedBacktests = [...dayProgress.backtests, { ...backtestData, id }];
+      const uniqueDatesCount = countUniqueBacktestDates(updatedBacktests);
       
       updatedDailyProgress[performDate] = {
         ...dayProgress,
         backtests: updatedBacktests,
-        isComplete: updatedBacktests.length >= 5,
+        isComplete: uniqueDatesCount >= 5,
       };
       
-      // Calculate new total
+      // Calculate new total based on unique dates across all days
       let newTotal = 0;
       Object.values(updatedDailyProgress).forEach(day => {
-        newTotal += day.backtests.length;
+        newTotal += countUniqueBacktestDates(day.backtests);
       });
       
       return {
@@ -198,17 +205,18 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
       // Update the day's backtests
       const dayProgress = updatedDailyProgress[targetDate];
       const updatedBacktests = dayProgress.backtests.filter(bt => bt.id !== id);
+      const uniqueDatesCount = countUniqueBacktestDates(updatedBacktests);
       
       updatedDailyProgress[targetDate] = {
         ...dayProgress,
         backtests: updatedBacktests,
-        isComplete: updatedBacktests.length >= 5,
+        isComplete: uniqueDatesCount >= 5,
       };
       
-      // Calculate new total
+      // Calculate new total based on unique dates across all days
       let newTotal = 0;
       Object.values(updatedDailyProgress).forEach(day => {
-        newTotal += day.backtests.length;
+        newTotal += countUniqueBacktestDates(day.backtests);
       });
       
       return {
@@ -314,10 +322,12 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
       if (force || repoVersion > currentVersion) {
         console.log(`[Sync] Updating: ${currentVersion} → ${repoVersion}`);
         
-        // Calculate actual backtest count from repo data
+        // Calculate actual backtest count from repo data using unique dates
         let repoBacktestCount = 0;
         Object.values(cleanedData.dailyProgress).forEach((day: any) => {
-          repoBacktestCount += day.backtests.length;
+          // Count unique dates within each day
+          const uniqueDatesCount = new Set(day.backtests.map((bt: any) => bt.backtestDate)).size;
+          repoBacktestCount += uniqueDatesCount;
         });
         
         // Update state with the correct count
@@ -380,6 +390,10 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
             return false;
           }
         });
+        
+        // Update isComplete status based on unique dates count
+        const uniqueDatesCount = new Set(day.backtests.map((bt: any) => bt.backtestDate)).size;
+        day.isComplete = uniqueDatesCount >= 5;
       });
     } catch (error) {
       console.error("[Sync] Data validation error:", error);

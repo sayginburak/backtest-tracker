@@ -146,13 +146,25 @@ const CalendarView: React.FC = () => {
 
     const dateKey = formatDateKey(date);
     const dayProgress = state.dailyProgress[dateKey];
-    const count = dayProgress?.backtests.length || 0;
-    const isComplete = dayProgress?.isComplete || false;
+    
+    if (!dayProgress || dayProgress.backtests.length === 0) {
+      return (
+        <div>
+          <DateIndicator count={0} isComplete={false}>
+            {''}
+          </DateIndicator>
+        </div>
+      );
+    }
+    
+    // Count unique backtest dates
+    const uniqueDatesCount = new Set(dayProgress.backtests.map(bt => bt.backtestDate)).size;
+    const isComplete = dayProgress.isComplete;
 
     return (
       <div>
-        <DateIndicator count={count} isComplete={isComplete}>
-          {count > 0 ? count : ''}
+        <DateIndicator count={uniqueDatesCount} isComplete={isComplete}>
+          {uniqueDatesCount > 0 ? uniqueDatesCount : ''}
         </DateIndicator>
       </div>
     );
@@ -183,12 +195,20 @@ const CalendarView: React.FC = () => {
       );
     }
     
+    // Count unique backtest dates
+    const uniqueDatesCount = new Set(dayProgress.backtests.map(bt => bt.backtestDate)).size;
+    
     return (
       <SelectedDateInfo>
         <InfoTitle>{format(selectedDate, 'MMMM d, yyyy')}</InfoTitle>
         
         <StatItem>
-          <StatLabel>Backtests completed:</StatLabel>
+          <StatLabel>Unique backtest dates:</StatLabel>
+          <StatValue>{uniqueDatesCount}</StatValue>
+        </StatItem>
+        
+        <StatItem>
+          <StatLabel>Total entries:</StatLabel>
           <StatValue>{dayProgress.backtests.length}</StatValue>
         </StatItem>
         
@@ -204,7 +224,7 @@ const CalendarView: React.FC = () => {
           <StatValue>
             {dayProgress.isComplete 
               ? 'Minimum requirement met' 
-              : `${5 - dayProgress.backtests.length} more needed`}
+              : `${5 - uniqueDatesCount} more unique dates needed`}
           </StatValue>
         </StatItem>
 

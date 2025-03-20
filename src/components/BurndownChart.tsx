@@ -113,21 +113,21 @@ const BurndownChart: React.FC = () => {
     // Check if the dailyProgress object has any data
     const progressKeys = Object.keys(state.dailyProgress);
     
-    // Count backtests for each date
+    // Count unique backtest dates for each day
     let totalBacktests = 0;
     progressKeys.forEach(dateKey => {
-      const count = state.dailyProgress[dateKey]?.backtests.length || 0;
-      totalBacktests += count;
+      const uniqueDatesCount = new Set(state.dailyProgress[dateKey]?.backtests.map((bt: any) => bt.backtestDate)).size;
+      totalBacktests += uniqueDatesCount;
     });
 
-    // Actual backtests done per day - ensure correct date formatting for lookup
+    // Actual unique backtest dates per day - ensure correct date formatting for lookup
     const actualData = dateRange.map(date => {
       const dateKey = format(date, 'yyyy-MM-dd');
       const dayProgress = state.dailyProgress[dateKey];
-      return dayProgress?.backtests.length || 0;
+      return dayProgress ? new Set(dayProgress.backtests.map((bt: any) => bt.backtestDate)).size : 0;
     });
     
-    // Cumulative backtests (total done so far)
+    // Cumulative unique backtest dates (total done so far)
     const cumulativeData = [];
     let running = 0;
     for (const count of actualData) {
