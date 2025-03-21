@@ -1,10 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import ReactDatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { format, setHours, setMinutes } from 'date-fns';
+import { format, setHours, setMinutes, parseISO, startOfDay } from 'date-fns';
 import { useBacktest } from '../context/BacktestContext';
+import { useForm } from '../context/FormContext';
 import { Backtest } from '../types';
 import styled from '@emotion/styled';
+
+// Add this to declare the _isHandlingDuplicate property on the Window interface
+declare global {
+  interface Window {
+    _isHandlingDuplicate?: boolean;
+  }
+}
 
 const FormContainer = styled.div`
   background-color: #ffffff;
@@ -104,6 +112,7 @@ const ButtonSecondary = styled(Button)`
 
 const BacktestForm: React.FC = () => {
   const { addBacktest } = useBacktest();
+  const { pendingDuplicate, clearDuplicate } = useForm();
   const [backtestDate, setBacktestDate] = useState<Date | null>(new Date());
   const [datePerformed, setDatePerformed] = useState<Date | null>(new Date());
   const [noSetupFound, setNoSetupFound] = useState<boolean>(false);
@@ -120,25 +129,226 @@ const BacktestForm: React.FC = () => {
   const [pipsFromMSS, setPipsFromMSS] = useState<number>(0);
   const [chartUrl, setChartUrl] = useState<string>('');
 
+  // Fill form with duplicate backtest data when available
   useEffect(() => {
-    if (backtestDate) {
-      if (swingFormationTime) {
-        const newDate = new Date(backtestDate);
-        newDate.setHours(swingFormationTime.getHours(), swingFormationTime.getMinutes(), 0, 0);
-        setSwingFormationTime(newDate);
-      } else {
-        setSwingFormationTime(setHours(setMinutes(new Date(backtestDate), 0), 9));
-      }
-
-      if (mssTime) {
-        const newDate = new Date(backtestDate);
-        newDate.setHours(mssTime.getHours(), mssTime.getMinutes(), 0, 0);
-        setMssTime(newDate);
-      } else {
-        setMssTime(setHours(setMinutes(new Date(backtestDate), 0), 10));
+    if (pendingDuplicate) {
+      console.log("========== DUPLICATE DIAGNOSTICS ==========");
+      console.log("Original backtest:", JSON.stringify(pendingDuplicate, null, 2));
+      
+      try {
+        // CRITICAL FIX: Handle backtest date specifically with timezone safety
+        // Convert to a safe date format by explicitly handling only the date part
+        const backtestDateStr = pendingDuplicate.backtestDate;
+        console.log("Original backtest date string:", backtestDateStr);
+        
+        // Create a date at the start of the day in local timezone to avoid offset issues
+        const backtestDateObj = startOfDay(parseISO(backtestDateStr));
+        console.log("Parsed backtest date object:", backtestDateObj);
+        console.log("Backtest date toISOString:", backtestDateObj.toISOString());
+        console.log("Backtest date toString:", backtestDateObj.toString());
+        
+        // Set duplicating flag to prevent second useEffect from running
+        window._isHandlingDuplicate = true;
+        
+        setBacktestDate(backtestDateObj);
+        
+        // Set date performed to today's date
+        const todayDate = startOfDay(new Date());
+        console.log("Today's date for datePerformed:", todayDate.toString());
+        setDatePerformed(todayDate);
+        
+        // Set other form fields
+        setNoSetupFound(pendingDuplicate.noSetupFound);
+        setHasLiqSweep(pendingDuplicate.hasLiqSweep);
+        
+        // Handle swing formation time
+        if (pendingDuplicate.swingFormationTime) {
+          console.log("Original swing formation time string:", pendingDuplicate.swingFormationTime);
+          // Parse time carefully to avoid timezone issues
+          const [hoursStr, minutesStr] = pendingDuplicate.swingFormationTime.split(':');
+          const hours = parseInt(hoursStr, 10);
+          const minutes = parseInt(minutesStr, 10);
+          console.log(`Parsed swing time components - hours: ${hours}, minutes: ${minutes}`);
+          
+          // Create a new date object at the start of the day to avoid timezone issues
+          const swingTime = new Date(backtestDateObj);
+          // Set hours and minutes explicitly
+          swingTime.setHours(hours);
+          swingTime.setMinutes(minutes);
+          swingTime.setSeconds(0);
+          swingTime.setMilliseconds(0);
+          
+          console.log("Final swing time object:", swingTime);
+          console.log("Swing time toISOString:", swingTime.toISOString());
+          console.log("Swing time toString:", swingTime.toString());
+          console.log("Expected time display:", format(swingTime, 'HH:mm'));
+          
+          setSwingFormationTime(swingTime);
+        }
+        
+        // Handle MSS time
+        if (pendingDuplicate.mssTime) {
+          console.log("Original MSS time string:", pendingDuplicate.mssTime);
+          // Parse time carefully to avoid timezone issues
+          const [hoursStr, minutesStr] = pendingDuplicate.mssTime.split(':');
+          const hours = parseInt(hoursStr, 10);
+          const minutes = parseInt(minutesStr, 10);
+          console.log(`Parsed MSS time components - hours: ${hours}, minutes: ${minutes}`);
+          
+          // Create a new date object at the start of the day to avoid timezone issues
+          const mssTimeObj = new Date(backtestDateObj);
+          // Set hours and minutes explicitly
+          mssTimeObj.setHours(hours);
+          mssTimeObj.setMinutes(minutes);
+          mssTimeObj.setSeconds(0);
+          mssTimeObj.setMilliseconds(0);
+          
+          console.log("Final MSS time object:", mssTimeObj);
+          console.log("MSS time toISOString:", mssTimeObj.toISOString());
+          console.log("MSS time toString:", mssTimeObj.toString());
+          console.log("Expected time display:", format(mssTimeObj, 'HH:mm'));
+          
+          setMssTime(mssTimeObj);
+        }
+        
+        // Set the remaining fields
+        setObviousnessRating(pendingDuplicate.obviousnessRating);
+        setLiqSwingType(pendingDuplicate.liqSwingType || 'PDH/PDL');
+        setConvincingRating(pendingDuplicate.convincingRating || 5);
+        setTimeframe(pendingDuplicate.timeframe as '1m' | '5m');
+        setIsProtectedSwing(pendingDuplicate.isProtectedSwing);
+        setDidPriceExpand(pendingDuplicate.didPriceExpand);
+        setPipsFromSwingLow(pendingDuplicate.pipsFromSwingLow);
+        setPipsFromMSS(pendingDuplicate.pipsFromMSS);
+        setChartUrl(pendingDuplicate.chartUrl || '');
+        console.log("========== END DUPLICATE DIAGNOSTICS ==========");
+        
+        // Reset duplicating flag after a short delay
+        setTimeout(() => {
+          window._isHandlingDuplicate = false;
+        }, 500);
+      } catch (error) {
+        console.error("Error parsing backtest data for duplication:", error);
+        resetForm();
+        window._isHandlingDuplicate = false;
+      } finally {
+        // Delay clearing the duplicate to ensure state updates have time to complete
+        // This is important for React's asynchronous state updates
+        setTimeout(() => {
+          clearDuplicate();
+          console.log("Duplicate data cleared after timeout");
+        }, 1000);
       }
     }
-  }, [backtestDate]);
+  }, [pendingDuplicate, clearDuplicate]);
+
+  // Fix circular dependency in the date change effect
+  useEffect(() => {
+    // Skip this effect if we're handling a duplicate to prevent circular updates
+    if (backtestDate && !window._isHandlingDuplicate) {
+      console.log("Date effect running for backtestDate:", format(backtestDate, 'yyyy-MM-dd'));
+      
+      // Only initialize time values if they don't already exist
+      if (!swingFormationTime) {
+        const newTime = setHours(setMinutes(new Date(backtestDate), 0), 9);
+        console.log("Setting default swingFormationTime:", format(newTime, 'HH:mm'));
+        setSwingFormationTime(newTime);
+      } else {
+        // Preserve the existing time but update the date
+        const newSwingTime = new Date(backtestDate);
+        newSwingTime.setHours(
+          swingFormationTime.getHours(),
+          swingFormationTime.getMinutes(),
+          0,
+          0
+        );
+        console.log("Updating swingFormationTime to:", format(newSwingTime, 'yyyy-MM-dd HH:mm'));
+        setSwingFormationTime(newSwingTime);
+      }
+
+      if (!mssTime) {
+        const newTime = setHours(setMinutes(new Date(backtestDate), 0), 10);
+        console.log("Setting default mssTime:", format(newTime, 'HH:mm'));
+        setMssTime(newTime);
+      } else {
+        // Preserve the existing time but update the date
+        const newMssTime = new Date(backtestDate);
+        newMssTime.setHours(
+          mssTime.getHours(),
+          mssTime.getMinutes(),
+          0,
+          0
+        );
+        console.log("Updating mssTime to:", format(newMssTime, 'yyyy-MM-dd HH:mm'));
+        setMssTime(newMssTime);
+      }
+    }
+  }, [backtestDate]); // Only depend on backtestDate to avoid circular dependency
+
+  // Fix the time pickers to handle changes properly
+  const handleSwingTimeChange = (date: Date | null) => {
+    if (!date) return;
+    console.log("handleSwingTimeChange called with:", date);
+    
+    // Use the time from the selected date but keep the date part from backtestDate
+    if (backtestDate) {
+      // Create a new date with backtestDate as the base
+      const newDate = new Date(backtestDate);
+      
+      // Set only the time part from the picked date
+      newDate.setHours(date.getHours());
+      newDate.setMinutes(date.getMinutes());
+      newDate.setSeconds(0);
+      newDate.setMilliseconds(0);
+      
+      console.log("Setting swing time with date part from backtestDate:", newDate);
+      console.log("Formatted time:", format(newDate, 'HH:mm'));
+      
+      // Set flag to prevent the date effect from firing
+      window._isHandlingDuplicate = true;
+      setSwingFormationTime(newDate);
+      
+      // Clear flag after a short delay
+      setTimeout(() => {
+        window._isHandlingDuplicate = false;
+      }, 100);
+    } else {
+      // If no backtestDate, just use the selected date directly
+      setSwingFormationTime(date);
+    }
+  };
+
+  const handleMssTimeChange = (date: Date | null) => {
+    if (!date) return;
+    console.log("handleMssTimeChange called with:", date);
+    
+    // Use the time from the selected date but keep the date part from backtestDate
+    if (backtestDate) {
+      // Create a new date with backtestDate as the base
+      const newDate = new Date(backtestDate);
+      
+      // Set only the time part from the picked date
+      newDate.setHours(date.getHours());
+      newDate.setMinutes(date.getMinutes());
+      newDate.setSeconds(0);
+      newDate.setMilliseconds(0);
+      
+      console.log("Setting MSS time with date part from backtestDate:", newDate);
+      console.log("Formatted time:", format(newDate, 'HH:mm'));
+      
+      // Set flag to prevent the date effect from firing
+      window._isHandlingDuplicate = true;
+      setMssTime(newDate);
+      
+      // Clear flag after a short delay
+      setTimeout(() => {
+        window._isHandlingDuplicate = false;
+      }, 100);
+    } else {
+      // If no backtestDate, just use the selected date directly
+      setMssTime(date);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,9 +376,14 @@ const BacktestForm: React.FC = () => {
       }
     }
 
+    // Use startOfDay to ensure dates are timezone-safe
+    const backtestDateFormatted = format(startOfDay(backtestDate), 'yyyy-MM-dd');
+    const datePerformedFormatted = format(startOfDay(datePerformed), 'yyyy-MM-dd');
+
+    // Create the new backtest object
     const newBacktest: Omit<Backtest, 'id'> = {
-      backtestDate: format(backtestDate, 'yyyy-MM-dd'),
-      datePerformed: format(datePerformed, 'yyyy-MM-dd'),
+      backtestDate: backtestDateFormatted,
+      datePerformed: datePerformedFormatted,
       noSetupFound,
       hasLiqSweep: noSetupFound ? false : hasLiqSweep,
       swingFormationTime: noSetupFound ? '' : format(swingFormationTime || new Date(), 'HH:mm'),
@@ -184,12 +399,13 @@ const BacktestForm: React.FC = () => {
       convincingRating: noSetupFound ? 0 : convincingRating
     };
 
+    console.log("Submitting new backtest:", newBacktest);
     addBacktest(newBacktest);
     resetForm();
   };
 
   const resetForm = () => {
-    const now = new Date();
+    const now = startOfDay(new Date());
     setBacktestDate(now);
     setDatePerformed(now);
     setNoSetupFound(false);
@@ -205,6 +421,8 @@ const BacktestForm: React.FC = () => {
     setPipsFromSwingLow(0);
     setPipsFromMSS(0);
     setChartUrl('');
+    
+    console.log("Form reset with date:", now);
   };
 
   return (
@@ -212,11 +430,25 @@ const BacktestForm: React.FC = () => {
       <FormTitle>Add New Backtest</FormTitle>
       <form onSubmit={handleSubmit}>
         <FormGroup>
-          <Label htmlFor="backtestDate">Backtest Date:</Label>
+          <Label htmlFor="backtestDate">
+            Backtest Date:
+            {backtestDate && (
+              <span style={{ marginLeft: '5px', color: '#666', fontSize: '0.9rem' }}>
+                (Current: {format(backtestDate, 'yyyy-MM-dd')})
+              </span>
+            )}
+          </Label>
           <ReactDatePicker
             id="backtestDate"
             selected={backtestDate}
-            onChange={(date) => setBacktestDate(date)}
+            onChange={(date) => {
+              // When a new date is selected, ensure we use the start of day to avoid timezone issues
+              if (date) {
+                setBacktestDate(startOfDay(date));
+              } else {
+                setBacktestDate(null);
+              }
+            }}
             dateFormat="yyyy-MM-dd"
             className="form-control"
             customInput={<Input />}
@@ -224,11 +456,25 @@ const BacktestForm: React.FC = () => {
         </FormGroup>
         
         <FormGroup>
-          <Label htmlFor="datePerformed">Date Performed:</Label>
+          <Label htmlFor="datePerformed">
+            Date Performed:
+            {datePerformed && (
+              <span style={{ marginLeft: '5px', color: '#666', fontSize: '0.9rem' }}>
+                (Current: {format(datePerformed, 'yyyy-MM-dd')})
+              </span>
+            )}
+          </Label>
           <ReactDatePicker
             id="datePerformed"
             selected={datePerformed}
-            onChange={(date) => setDatePerformed(date)}
+            onChange={(date) => {
+              // When a new date is selected, ensure we use the start of day to avoid timezone issues
+              if (date) {
+                setDatePerformed(startOfDay(date));
+              } else {
+                setDatePerformed(null);
+              }
+            }}
             dateFormat="yyyy-MM-dd"
             className="form-control"
             customInput={<Input />}
@@ -283,11 +529,18 @@ const BacktestForm: React.FC = () => {
         </FormGroup>
 
         <FormGroup>
-          <Label htmlFor="swingFormationTime">When was the swing high/low formed:</Label>
+          <Label htmlFor="swingFormationTime">
+            When was the swing high/low formed: 
+            {swingFormationTime && !noSetupFound && (
+              <span style={{ marginLeft: '5px', color: '#666', fontSize: '0.9rem' }}>
+                (Current: {format(swingFormationTime, 'HH:mm')})
+              </span>
+            )}
+          </Label>
           <ReactDatePicker
             id="swingFormationTime"
             selected={swingFormationTime}
-            onChange={(date) => setSwingFormationTime(date)}
+            onChange={handleSwingTimeChange}
             showTimeSelect
             timeFormat="HH:mm"
             timeIntervals={1}
@@ -340,11 +593,18 @@ const BacktestForm: React.FC = () => {
         </FormGroup>
 
         <FormGroup>
-          <Label htmlFor="mssTime">When MSS came after the sweep:</Label>
+          <Label htmlFor="mssTime">
+            When MSS came after the sweep:
+            {mssTime && !noSetupFound && (
+              <span style={{ marginLeft: '5px', color: '#666', fontSize: '0.9rem' }}>
+                (Current: {format(mssTime, 'HH:mm')})
+              </span>
+            )}
+          </Label>
           <ReactDatePicker
             id="mssTime"
             selected={mssTime}
-            onChange={(date) => setMssTime(date)}
+            onChange={handleMssTimeChange}
             showTimeSelect
             showTimeSelectOnly
             timeIntervals={1}

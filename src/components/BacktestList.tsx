@@ -2,6 +2,8 @@ import React, { useEffect } from 'react';
 import styled from '@emotion/styled';
 import { format, parseISO } from 'date-fns';
 import { useBacktest } from '../context/BacktestContext';
+import { useForm } from '../context/FormContext';
+import { useTab } from '../App';
 import { useFilter } from '../App';
 import { Backtest } from '../types';
 
@@ -72,10 +74,31 @@ const ActionButton = styled.button`
   cursor: pointer;
   font-size: 0.8rem;
   transition: background-color 0.2s;
+  margin-right: 5px;
 
   &:hover {
     background-color: #c82333;
   }
+`;
+
+const DuplicateButton = styled.button`
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #218838;
+  }
+`;
+
+const ActionsContainer = styled.div`
+  display: flex;
+  gap: 5px;
 `;
 
 const EmptyState = styled.div`
@@ -156,6 +179,8 @@ const RedText = styled.span`
 
 const BacktestList: React.FC = () => {
   const { state, deleteBacktest } = useBacktest();
+  const { duplicateBacktest } = useForm();
+  const { setActiveTab } = useTab();
   const { filterDate, setFilterDate } = useFilter();
   const [searchDate, setSearchDate] = React.useState('');
   const isProduction = import.meta.env.PROD;
@@ -213,6 +238,11 @@ const BacktestList: React.FC = () => {
     if (window.confirm('Are you sure you want to delete this backtest?')) {
       deleteBacktest(id);
     }
+  };
+
+  const handleDuplicateBacktest = (backtest: Backtest) => {
+    duplicateBacktest(backtest);
+    setActiveTab('add-backtest');
   };
 
   return (
@@ -323,9 +353,14 @@ const BacktestList: React.FC = () => {
                   <TableCell>{backtest.noSetupFound ? '—' : (backtest.convincingRating ? `${backtest.convincingRating}/10` : '—')}</TableCell>
                   {!isProduction && (
                     <TableCell>
-                      <ActionButton onClick={() => handleDeleteBacktest(backtest.id)}>
-                        Delete
-                      </ActionButton>
+                      <ActionsContainer>
+                        <DuplicateButton onClick={() => handleDuplicateBacktest(backtest)}>
+                          Duplicate
+                        </DuplicateButton>
+                        <ActionButton onClick={() => handleDeleteBacktest(backtest.id)}>
+                          Delete
+                        </ActionButton>
+                      </ActionsContainer>
                     </TableCell>
                   )}
                 </TableRow>

@@ -1,7 +1,8 @@
-import React, { useState, createContext, useContext } from 'react';
+import React, { useState, createContext, useContext, useEffect } from 'react';
 import styled from '@emotion/styled';
 import './App.css';
 import { BacktestProvider } from './context/BacktestContext';
+import { FormProvider, useForm } from './context/FormContext';
 import BacktestForm from './components/BacktestForm';
 import BacktestList from './components/BacktestList';
 import CalendarView from './components/CalendarView';
@@ -15,142 +16,161 @@ interface FilterContextType {
   setFilterDate: (date: string) => void;
 }
 
-export const FilterContext = createContext<FilterContextType>({
+// Create a context for tab management
+interface TabContextType {
+  activeTab: 'dashboard' | 'add-backtest' | 'data';
+  setActiveTab: (tab: 'dashboard' | 'add-backtest' | 'data') => void;
+}
+
+const FilterContext = createContext<FilterContextType>({
   filterDate: '',
-  setFilterDate: () => {}
+  setFilterDate: () => {},
+});
+
+const TabContext = createContext<TabContextType>({
+  activeTab: 'dashboard',
+  setActiveTab: () => {},
 });
 
 export const useFilter = () => useContext(FilterContext);
+export const useTab = () => useContext(TabContext);
 
 const AppContainer = styled.div`
   max-width: 1200px;
   margin: 0 auto;
-  padding: 30px 20px;
-  background-color: #f5f5f5;
+  padding: 20px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 `;
 
 const Header = styled.header`
-  margin-bottom: 30px;
   text-align: center;
-  background-color: #ffffff;
-  padding: 30px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 30px;
 `;
 
 const Title = styled.h1`
-  font-size: 2.5rem;
-  margin-bottom: 10px;
   color: #333;
+  margin-bottom: 5px;
+  font-size: 2.2rem;
 `;
 
 const Subtitle = styled.p`
-  font-size: 1.2rem;
   color: #666;
-  margin-bottom: 0;
+  margin-top: 0;
+  font-size: 1.1rem;
 `;
 
 const TabContainer = styled.div`
   display: flex;
+  border-bottom: 1px solid #ddd;
   margin-bottom: 20px;
-  background-color: #fff;
-  border-radius: 8px;
-  padding: 10px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 `;
 
-const Tab = styled.button<{ active: boolean }>`
+const Tab = styled.div<{ active: boolean }>`
   padding: 10px 20px;
-  background-color: ${props => props.active ? '#007bff' : 'transparent'};
-  color: ${props => props.active ? 'white' : '#333'};
-  border: none;
-  border-radius: 4px;
   cursor: pointer;
-  font-size: 1rem;
-  transition: all 0.2s;
-  margin-right: 10px;
-
+  color: ${props => props.active ? '#007bff' : '#333'};
+  border-bottom: 2px solid ${props => props.active ? '#007bff' : 'transparent'};
+  font-weight: ${props => props.active ? '600' : '400'};
+  
   &:hover {
-    background-color: ${props => props.active ? '#0069d9' : '#f0f0f0'};
-  }
-
-  &:last-child {
-    margin-right: 0;
+    color: #007bff;
   }
 `;
 
-function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'add-backtest' | 'data'>('dashboard');
+function AppContent() {
+  const { activeTab, setActiveTab } = useTab();
+  const { pendingDuplicate } = useForm();
   const showAdminTabs = import.meta.env.VITE_SHOW_ADMIN_TABS === 'true';
-  const [filterDate, setFilterDate] = useState<string>('');
   const isProd = import.meta.env.PROD;
 
   // If we're in production and trying to view an admin tab, redirect to dashboard
-  React.useEffect(() => {
+  useEffect(() => {
     if (!showAdminTabs && (activeTab === 'add-backtest' || activeTab === 'data')) {
       setActiveTab('dashboard');
     }
-  }, [activeTab, showAdminTabs]);
+  }, [activeTab, showAdminTabs, setActiveTab]);
+
+  // Switch to the add-backtest tab if there's a pending duplicate
+  useEffect(() => {
+    if (pendingDuplicate && showAdminTabs) {
+      setActiveTab('add-backtest');
+    }
+  }, [pendingDuplicate, showAdminTabs, setActiveTab]);
 
   // Only show navigation if we're in development mode OR we have admin tabs to show
   const shouldShowNavigation = !isProd || showAdminTabs;
 
   return (
-    <BacktestProvider>
+    <>
       {/* AutoSync component will handle background syncing */}
       <AutoSync />
       
-      <FilterContext.Provider value={{ filterDate, setFilterDate }}>
-        <AppContainer>
-          <Header>
-            <Title>Trading Backtest Tracker</Title>
-            <Subtitle>Track your daily backtests and analyze your progress</Subtitle>
-          </Header>
+      <AppContainer>
+        <Header>
+          <Title>Trading Backtest Tracker</Title>
+          <Subtitle>Track your daily backtests and analyze your progress</Subtitle>
+        </Header>
 
-          {shouldShowNavigation && (
-            <TabContainer>
-              <Tab 
-                active={activeTab === 'dashboard'}
-                onClick={() => setActiveTab('dashboard')}
-              >
-                Dashboard
-              </Tab>
-              {showAdminTabs && (
-                <>
-                  <Tab 
-                    active={activeTab === 'add-backtest'}
-                    onClick={() => setActiveTab('add-backtest')}
-                  >
-                    Add New Backtest
-                  </Tab>
-                  <Tab 
-                    active={activeTab === 'data'}
-                    onClick={() => setActiveTab('data')}
-                  >
-                    Data Management
-                  </Tab>
-                </>
-              )}
-            </TabContainer>
-          )}
+        {shouldShowNavigation && (
+          <TabContainer>
+            <Tab 
+              active={activeTab === 'dashboard'}
+              onClick={() => setActiveTab('dashboard')}
+            >
+              Dashboard
+            </Tab>
+            {showAdminTabs && (
+              <>
+                <Tab 
+                  active={activeTab === 'add-backtest'}
+                  onClick={() => setActiveTab('add-backtest')}
+                >
+                  Add New Backtest
+                </Tab>
+                <Tab 
+                  active={activeTab === 'data'}
+                  onClick={() => setActiveTab('data')}
+                >
+                  Data Management
+                </Tab>
+              </>
+            )}
+          </TabContainer>
+        )}
 
-          {activeTab === 'dashboard' && (
-            <>
-              <CalendarView />
-              <BurndownChart />
-              <BacktestList />
-            </>
-          )}
+        {activeTab === 'dashboard' && (
+          <>
+            <CalendarView />
+            <BurndownChart />
+            <BacktestList />
+          </>
+        )}
 
-          {activeTab === 'add-backtest' && showAdminTabs && (
-            <BacktestForm />
-          )}
+        {activeTab === 'add-backtest' && showAdminTabs && (
+          <BacktestForm />
+        )}
 
-          {activeTab === 'data' && showAdminTabs && (
-            <DataExportImport />
-          )}
-        </AppContainer>
-      </FilterContext.Provider>
+        {activeTab === 'data' && showAdminTabs && (
+          <DataExportImport />
+        )}
+      </AppContainer>
+    </>
+  );
+}
+
+function App() {
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'add-backtest' | 'data'>('dashboard');
+  const [filterDate, setFilterDate] = useState<string>('');
+
+  return (
+    <BacktestProvider>
+      <FormProvider>
+        <FilterContext.Provider value={{ filterDate, setFilterDate }}>
+          <TabContext.Provider value={{ activeTab, setActiveTab }}>
+            <AppContent />
+          </TabContext.Provider>
+        </FilterContext.Provider>
+      </FormProvider>
     </BacktestProvider>
   );
 }
