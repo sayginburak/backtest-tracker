@@ -4,9 +4,11 @@ export interface Backtest {
   datePerformed: string; // When the backtest was performed
   noSetupFound: boolean; // No valid setup was found
   hasLiqSweep: boolean; // Is there an obvious liq sweep?
-  swingFormationTime: string; // When the swing high/low was formed
+  swingFormationTime: string; // When the swing high/low was formed (HH:mm)
+  swingFormationDateTime?: string; // Full date and time for swing formation (yyyy-MM-dd HH:mm)
   obviousnessRating: number; // Rate of obviousness (1-10)
-  mssTime: string; // When MSS came after the sweep
+  mssTime: string; // When MSS came after the sweep (HH:mm)
+  mssDateTime?: string; // Full date and time for MSS (yyyy-MM-dd HH:mm)
   timeframe: '1m' | '5m'; // Is in 5m or 1m timeframe
   isProtectedSwing: boolean; // Is liq sweep formed a protected swing?
   didPriceExpand: boolean; // Did price expand?
