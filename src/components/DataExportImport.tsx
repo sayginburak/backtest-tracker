@@ -113,7 +113,7 @@ const SyncContainer = styled.div`
 `;
 
 const DataExportImport: React.FC = () => {
-  const { exportData, importData, syncWithRepo, state } = useBacktest();
+  const { exportData, exportToCsv, importData, syncWithRepo, state } = useBacktest();
   const [jsonData, setJsonData] = useState('');
   const [importText, setImportText] = useState('');
   const [syncStatus, setSyncStatus] = useState<{ success: boolean; message: string } | null>(null);
@@ -191,6 +191,24 @@ const DataExportImport: React.FC = () => {
     document.body.removeChild(element);
   };
 
+  const handleExportCsv = () => {
+    const csvData = exportToCsv();
+    
+    // Create a download link
+    const element = document.createElement('a');
+    const file = new Blob([csvData], { type: 'text/csv' });
+    element.href = URL.createObjectURL(file);
+    
+    // Set the file name with current date
+    const now = new Date();
+    const dateString = now.toISOString().split('T')[0];
+    element.download = `backtest-data-${dateString}.csv`;
+    
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  };
+
   const handleImport = () => {
     if (!importText.trim()) {
       alert('Please paste JSON data to import');
@@ -260,11 +278,12 @@ const DataExportImport: React.FC = () => {
       <div>
         <SectionTitle>Export Data</SectionTitle>
         <Description>
-          Export your backtest data to a JSON file. You can later use this file to restore 
-          your data or share it with others.
+          Export your backtest data as a JSON or CSV file. You can use JSON files to restore 
+          your data later, while CSV files are better for analyzing data in spreadsheets.
         </Description>
         <ButtonContainer>
-          <Button onClick={handleExport}>Export Data</Button>
+          <Button onClick={handleExport}>Export as JSON</Button>
+          <Button onClick={handleExportCsv}>Export as CSV</Button>
           {jsonData && (
             <ButtonSecondary onClick={() => setJsonData('')}>
               Clear

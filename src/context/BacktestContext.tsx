@@ -14,6 +14,7 @@ interface BacktestContextType {
   addBacktest: (backtest: Omit<Backtest, 'id'>) => void;
   deleteBacktest: (id: string) => void;
   exportData: () => string;
+  exportToCsv: () => string;
   importData: (jsonData: string) => void;
   syncWithRepo: (force?: boolean) => Promise<SyncResult>;
 }
@@ -236,6 +237,88 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
     }, null, 2);
   };
 
+  // Export data to CSV
+  const exportToCsv = (): string => {
+    // Define CSV header with all possible backtest fields
+    const headers = [
+      'ID',
+      'Backtest Date',
+      'Date Performed',
+      'No Setup Found',
+      'Has Liquidity Sweep',
+      'Swing Formation Time',
+      'Swing Formation DateTime',
+      'Obviousness Rating',
+      'MSS Time',
+      'MSS DateTime',
+      'Timeframe',
+      'Is Protected Swing',
+      'Did Price Expand',
+      'Pips From Swing Low',
+      'Pips From MSS',
+      'Chart URL',
+      'Liquidity Swing Type',
+      'Convincing Rating'
+    ];
+    
+    // Initialize CSV content with headers
+    let csvContent = headers.join(',') + '\n';
+    
+    // Collect all backtests across all days into a flat array
+    const allBacktests: Backtest[] = [];
+    Object.values(state.dailyProgress).forEach(day => {
+      day.backtests.forEach(backtest => {
+        allBacktests.push(backtest);
+      });
+    });
+    
+    // Sort backtests by date (newest first)
+    allBacktests.sort((a, b) => {
+      return new Date(b.backtestDate).getTime() - new Date(a.backtestDate).getTime();
+    });
+    
+    // Convert each backtest to a CSV row
+    allBacktests.forEach(backtest => {
+      // Helper function to escape CSV field values
+      const escapeField = (value: any): string => {
+        if (value === undefined || value === null) return '';
+        const stringValue = String(value);
+        // Escape quotes and wrap in quotes if contains commas or quotes
+        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+          return `"${stringValue.replace(/"/g, '""')}"`;
+        }
+        return stringValue;
+      };
+      
+      // Map backtest to CSV row values
+      const row = [
+        escapeField(backtest.id),
+        escapeField(backtest.backtestDate),
+        escapeField(backtest.datePerformed),
+        escapeField(backtest.noSetupFound),
+        escapeField(backtest.hasLiqSweep),
+        escapeField(backtest.swingFormationTime),
+        escapeField(backtest.swingFormationDateTime),
+        escapeField(backtest.obviousnessRating),
+        escapeField(backtest.mssTime),
+        escapeField(backtest.mssDateTime),
+        escapeField(backtest.timeframe),
+        escapeField(backtest.isProtectedSwing),
+        escapeField(backtest.didPriceExpand),
+        escapeField(backtest.pipsFromSwingLow),
+        escapeField(backtest.pipsFromMSS),
+        escapeField(backtest.chartUrl),
+        escapeField(backtest.liqSwingType),
+        escapeField(backtest.convincingRating)
+      ];
+      
+      // Add row to CSV content
+      csvContent += row.join(',') + '\n';
+    });
+    
+    return csvContent;
+  };
+
   // Import data from JSON
   const importData = (jsonData: string) => {
     try {
@@ -407,7 +490,8 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
       state, 
       addBacktest, 
       deleteBacktest, 
-      exportData, 
+      exportData,
+      exportToCsv, 
       importData, 
       syncWithRepo 
     }}>
