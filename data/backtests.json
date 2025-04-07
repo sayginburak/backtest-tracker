@@ -1,5 +1,5 @@
 {
-  "version": "1743890897080",
+  "version": "1744029846414",
   "data": {
     "dailyProgress": {
       "2025-03-11": {
@@ -2308,10 +2308,116 @@
           }
         ],
         "isComplete": true
+      },
+      "2025-04-07": {
+        "date": "2025-04-07",
+        "backtests": [
+          {
+            "backtestDate": "2022-09-12",
+            "datePerformed": "2025-04-07",
+            "noSetupFound": true,
+            "hasLiqSweep": false,
+            "swingFormationTime": "",
+            "swingFormationDateTime": "",
+            "obviousnessRating": 0,
+            "mssTime": "",
+            "mssDateTime": "",
+            "timeframe": "5m",
+            "isProtectedSwing": false,
+            "didPriceExpand": false,
+            "pipsFromSwingLow": 0,
+            "pipsFromMSS": 0,
+            "chartUrl": "https://www.tradingview.com/x/K03fleML/",
+            "liqSwingType": "",
+            "convincingRating": 0,
+            "id": "1744029118530-lg3x5i9"
+          },
+          {
+            "backtestDate": "2022-09-13",
+            "datePerformed": "2025-04-07",
+            "noSetupFound": false,
+            "hasLiqSweep": true,
+            "swingFormationTime": "10:50",
+            "swingFormationDateTime": "2022-09-12 10:50",
+            "obviousnessRating": 9,
+            "mssTime": "04:25",
+            "mssDateTime": "2022-09-13 04:25",
+            "timeframe": "5m",
+            "isProtectedSwing": false,
+            "didPriceExpand": false,
+            "pipsFromSwingLow": 0,
+            "pipsFromMSS": 0,
+            "chartUrl": "https://www.tradingview.com/x/z3nzwrCo/",
+            "liqSwingType": "PDH/PDL",
+            "convincingRating": 5,
+            "id": "1744029307274-yfjzq2e"
+          },
+          {
+            "backtestDate": "2022-09-14",
+            "datePerformed": "2025-04-07",
+            "noSetupFound": false,
+            "hasLiqSweep": true,
+            "swingFormationTime": "18:05",
+            "swingFormationDateTime": "2022-09-13 18:05",
+            "obviousnessRating": 8,
+            "mssTime": "03:05",
+            "mssDateTime": "2022-09-14 03:05",
+            "timeframe": "5m",
+            "isProtectedSwing": true,
+            "didPriceExpand": true,
+            "pipsFromSwingLow": 109,
+            "pipsFromMSS": 85,
+            "chartUrl": "https://www.tradingview.com/x/5SizARGV/",
+            "liqSwingType": "PDH/PDL",
+            "convincingRating": 8,
+            "id": "1744029472085-q3vg7gf"
+          },
+          {
+            "backtestDate": "2022-09-15",
+            "datePerformed": "2025-04-07",
+            "noSetupFound": false,
+            "hasLiqSweep": true,
+            "swingFormationTime": "21:05",
+            "swingFormationDateTime": "2022-09-14 21:05",
+            "obviousnessRating": 6,
+            "mssTime": "02:45",
+            "mssDateTime": "2022-09-15 02:45",
+            "timeframe": "5m",
+            "isProtectedSwing": false,
+            "didPriceExpand": false,
+            "pipsFromSwingLow": 0,
+            "pipsFromMSS": 0,
+            "chartUrl": "https://www.tradingview.com/x/xQxvLRhD/",
+            "liqSwingType": "Asia Low/High",
+            "convincingRating": 4,
+            "id": "1744029648377-4l8d7l4"
+          },
+          {
+            "backtestDate": "2022-09-16",
+            "datePerformed": "2025-04-07",
+            "noSetupFound": false,
+            "hasLiqSweep": true,
+            "swingFormationTime": "19:55",
+            "swingFormationDateTime": "2022-09-15 19:55",
+            "obviousnessRating": 5,
+            "mssTime": "03:05",
+            "mssDateTime": "2022-09-16 03:05",
+            "timeframe": "5m",
+            "isProtectedSwing": false,
+            "didPriceExpand": false,
+            "pipsFromSwingLow": 0,
+            "pipsFromMSS": 0,
+            "chartUrl": "https://www.tradingview.com/x/ineoV3W0/",
+            "liqSwingType": "PDH/PDL",
+            "convincingRating": 5,
+            "id": "1744029834792-zun41rv"
+          }
+        ],
+        "isComplete": true
       }
     },
-    "currentStreak": 0,
-    "totalBacktests": 95,
-    "lastUpdated": "1743890886325"
+    "currentStreak": 11,
+    "totalBacktests": 100,
+    "lastUpdated": "1744029834792"
   }
 }
