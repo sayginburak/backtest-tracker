@@ -5,7 +5,6 @@ import styled from '@emotion/styled';
 import { format } from 'date-fns';
 import { useBacktest } from '../context/BacktestContext';
 import { useFilter } from '../App';
-import { Analysis } from '../types';
 
 // Define proper types for react-calendar
 type Value = Date | null | [Date | null, Date | null];

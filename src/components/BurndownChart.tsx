@@ -4,7 +4,7 @@ import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement
 import styled from '@emotion/styled';
 import { format, subDays, isBefore, startOfMonth, endOfMonth, isWeekend, isBefore as isBeforeDate, parseISO } from 'date-fns';
 import { useBacktest } from '../context/BacktestContext';
-import { Analysis } from '../types';
+
 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);

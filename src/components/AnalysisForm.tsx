@@ -201,7 +201,7 @@ const AnalysisForm: React.FC<AnalysisFormProps> = ({ onSubmit, initialValues, on
           <ReactDatePicker
             id="backtestDate"
             selected={backtestDate}
-            onChange={(date: Date) => setBacktestDate(date)}
+            onChange={(date: Date | null) => setBacktestDate(date)}
             dateFormat="yyyy-MM-dd"
             className={`form-control ${errors.backtestDate ? 'is-invalid' : ''}`}
             customInput={<Input />}
@@ -214,7 +214,7 @@ const AnalysisForm: React.FC<AnalysisFormProps> = ({ onSubmit, initialValues, on
           <ReactDatePicker
             id="datePerformed"
             selected={datePerformed}
-            onChange={(date: Date) => setDatePerformed(date)}
+            onChange={(date: Date | null) => setDatePerformed(date)}
             dateFormat="yyyy-MM-dd"
             className={`form-control ${errors.datePerformed ? 'is-invalid' : ''}`}
             customInput={<Input />}

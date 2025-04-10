@@ -181,14 +181,16 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
     const date = format(new Date(), 'yyyy-MM-dd');
     
     setState(prevState => {
-      const dailyProgress = prevState.dailyProgress[date] || { backtests: [] };
+      const dailyProgress = prevState.dailyProgress[date] || { date, backtests: [], isComplete: false };
       
       return {
         ...prevState,
         dailyProgress: {
           ...prevState.dailyProgress,
           [date]: {
-            backtests: [...dailyProgress.backtests, { ...backtest, id }]
+            date,
+            backtests: [...dailyProgress.backtests, { ...backtest, id }],
+            isComplete: false
           }
         },
         lastUpdated: Date.now().toString()
@@ -392,8 +394,8 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
       const validatedRepoData = cleanAndValidateData(repoData);
       
       // Compare lastUpdated timestamps
-      const currentLastUpdated = parseInt(state.lastUpdated);
-      const repoLastUpdated = parseInt(validatedRepoData.lastUpdated);
+      const currentLastUpdated = parseInt(state.lastUpdated || '0');
+      const repoLastUpdated = parseInt(validatedRepoData.lastUpdated || '0');
       
       if (!force && currentLastUpdated >= repoLastUpdated) {
         console.log('[Sync] Local data is up to date');
