@@ -64,13 +64,22 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   const cleanAndValidateData = (data: BacktestState): BacktestState => {
     const validatedData = { ...data };
-    // Validate analyses
+    
+    // Initialize analyses if it doesn't exist
+    if (!validatedData.analyses) {
+      validatedData.analyses = {};
+    }
+    
+    // Validate analyses if they exist
     Object.keys(validatedData.analyses).forEach(date => {
-      validatedData.analyses[date] = validatedData.analyses[date].filter(analysis => {
-        const isValidDate = !isNaN(Date.parse(analysis.datePerformed));
-        return isValidDate && analysis.resultType.match(/[abcde]/);
-      });
+      if (Array.isArray(validatedData.analyses[date])) {
+        validatedData.analyses[date] = validatedData.analyses[date].filter(analysis => {
+          const isValidDate = !isNaN(Date.parse(analysis.datePerformed));
+          return isValidDate && analysis.resultType.match(/[abcde]/);
+        });
+      }
     });
+    
     return validatedData;
   };
 
@@ -391,7 +400,10 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
       }
       
       const repoData = await response.json();
-      const validatedRepoData = cleanAndValidateData(repoData);
+      
+      // Extract the actual data from the response
+      const actualData = repoData.data || repoData;
+      const validatedRepoData = cleanAndValidateData(actualData);
       
       // Compare lastUpdated timestamps
       const currentLastUpdated = parseInt(state.lastUpdated || '0');
