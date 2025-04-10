@@ -5,10 +5,12 @@ import { BacktestProvider } from './context/BacktestContext';
 import { FormProvider, useForm } from './context/FormContext';
 import BacktestForm from './components/BacktestForm';
 import BacktestList from './components/BacktestList';
+import AnalysisList from './components/AnalysisList';
 import CalendarView from './components/CalendarView';
 import BurndownChart from './components/BurndownChart';
 import DataExportImport from './components/DataExportImport';
 import AutoSync from './components/AutoSync';
+import AddAnalysisPage from './components/AddAnalysisPage';
 
 // Create a context for the selected filter date
 interface FilterContextType {
@@ -18,8 +20,8 @@ interface FilterContextType {
 
 // Create a context for tab management
 interface TabContextType {
-  activeTab: 'dashboard' | 'add-backtest' | 'data';
-  setActiveTab: (tab: 'dashboard' | 'add-backtest' | 'data') => void;
+  activeTab: 'dashboard' | 'add-backtest' | 'data' | 'add-analysis';
+  setActiveTab: (tab: 'dashboard' | 'add-backtest' | 'data' | 'add-analysis') => void;
 }
 
 const FilterContext = createContext<FilterContextType>({
@@ -85,7 +87,7 @@ function AppContent() {
 
   // If we're in production and trying to view an admin tab, redirect to dashboard
   useEffect(() => {
-    if (!showAdminTabs && (activeTab === 'add-backtest' || activeTab === 'data')) {
+    if (!showAdminTabs && (activeTab === 'add-backtest' || activeTab === 'data' || activeTab === 'add-analysis')) {
       setActiveTab('dashboard');
     }
   }, [activeTab, showAdminTabs, setActiveTab]);
@@ -128,6 +130,12 @@ function AppContent() {
                   Add New Backtest
                 </Tab>
                 <Tab 
+                  active={activeTab === 'add-analysis'}
+                  onClick={() => setActiveTab('add-analysis')}
+                >
+                  Add Analysis
+                </Tab>
+                <Tab 
                   active={activeTab === 'data'}
                   onClick={() => setActiveTab('data')}
                 >
@@ -143,11 +151,16 @@ function AppContent() {
             <CalendarView />
             <BurndownChart />
             <BacktestList />
+            <AnalysisList />
           </>
         )}
 
         {activeTab === 'add-backtest' && showAdminTabs && (
           <BacktestForm />
+        )}
+
+        {activeTab === 'add-analysis' && showAdminTabs && (
+          <AddAnalysisPage />
         )}
 
         {activeTab === 'data' && showAdminTabs && (
@@ -159,7 +172,7 @@ function AppContent() {
 }
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'add-backtest' | 'data'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'add-backtest' | 'data' | 'add-analysis'>('dashboard');
   const [filterDate, setFilterDate] = useState<string>('');
 
   return (

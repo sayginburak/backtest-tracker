@@ -5,6 +5,7 @@ import styled from '@emotion/styled';
 import { format } from 'date-fns';
 import { useBacktest } from '../context/BacktestContext';
 import { useFilter } from '../App';
+import { Analysis } from '../types';
 
 // Define proper types for react-calendar
 type Value = Date | null | [Date | null, Date | null];
@@ -59,7 +60,7 @@ const CalendarTitle = styled.h2`
   font-size: 1.5rem;
 `;
 
-const DateIndicator = styled.div<{ count: number; isComplete: boolean }>`
+const DateIndicator = styled.div<{ count: number; isComplete: boolean; hasAnalyses: boolean; hasBacktests: boolean }>`
   width: 24px;
   height: 24px;
   border-radius: 50%;
@@ -69,8 +70,14 @@ const DateIndicator = styled.div<{ count: number; isComplete: boolean }>`
   font-size: 12px;
   font-weight: bold;
   margin-top: 2px;
-  background-color: ${props => props.isComplete ? '#4caf50' : props.count > 0 ? '#ff9800' : 'transparent'};
-  color: ${props => props.count > 0 ? 'white' : 'inherit'};
+  background-color: ${props => {
+    if (props.isComplete) return '#4caf50'; // Green for complete
+    if (props.hasAnalyses && props.hasBacktests) return '#9c27b0'; // Purple for both
+    if (props.hasAnalyses) return '#2196f3'; // Blue for analyses
+    if (props.hasBacktests) return '#ff9800'; // Orange for backtests
+    return 'transparent';
+  }};
+  color: ${props => (props.hasAnalyses || props.hasBacktests) ? 'white' : 'inherit'};
 `;
 
 const SelectedDateInfo = styled.div`
@@ -146,25 +153,43 @@ const CalendarView: React.FC = () => {
 
     const dateKey = formatDateKey(date);
     const dayProgress = state.dailyProgress[dateKey];
+    const dateAnalyses = state.analyses[dateKey] || [];
     
-    if (!dayProgress || dayProgress.backtests.length === 0) {
+    // Check if there are backtests or analyses for this date
+    const hasBacktests = dayProgress && dayProgress.backtests.length > 0;
+    const hasAnalyses = dateAnalyses.length > 0;
+    
+    // Count unique backtest dates and analyses
+    const uniqueDatesCount = hasBacktests 
+      ? new Set(dayProgress.backtests.map(bt => bt.backtestDate)).size 
+      : 0;
+    const analysesCount = dateAnalyses.length;
+    
+    // Mark as complete when combined total is 5 or more
+    const isComplete = (uniqueDatesCount + analysesCount) >= 5;
+    
+    if (!hasBacktests && !hasAnalyses) {
       return (
         <div>
-          <DateIndicator count={0} isComplete={false}>
+          <DateIndicator count={0} isComplete={false} hasAnalyses={false} hasBacktests={false}>
             {''}
           </DateIndicator>
         </div>
       );
     }
     
-    // Count unique backtest dates
-    const uniqueDatesCount = new Set(dayProgress.backtests.map(bt => bt.backtestDate)).size;
-    const isComplete = dayProgress.isComplete;
+    // Display the combined count of unique backtests and analyses
+    const displayCount = uniqueDatesCount + analysesCount;
 
     return (
       <div>
-        <DateIndicator count={uniqueDatesCount} isComplete={isComplete}>
-          {uniqueDatesCount > 0 ? uniqueDatesCount : ''}
+        <DateIndicator 
+          count={displayCount} 
+          isComplete={isComplete} 
+          hasAnalyses={hasAnalyses} 
+          hasBacktests={hasBacktests}
+        >
+          {displayCount > 0 ? displayCount : ''}
         </DateIndicator>
       </div>
     );
@@ -184,49 +209,83 @@ const CalendarView: React.FC = () => {
   const renderSelectedDateInfo = () => {
     const dateKey = formatDateKey(selectedDate);
     const dayProgress = state.dailyProgress[dateKey];
-    const hasEntries = dayProgress && dayProgress.backtests.length > 0;
+    const dateAnalyses = state.analyses[dateKey] || [];
     
-    if (!dayProgress) {
+    const hasBacktests = dayProgress && dayProgress.backtests.length > 0;
+    const hasAnalyses = dateAnalyses.length > 0;
+    const hasEntries = hasBacktests || hasAnalyses;
+    
+    if (!hasEntries) {
       return (
         <SelectedDateInfo>
           <InfoTitle>No data for {format(selectedDate, 'MMMM d, yyyy')}</InfoTitle>
-          <p>No backtests have been recorded for this date.</p>
+          <p>No backtests or analyses have been recorded for this date.</p>
         </SelectedDateInfo>
       );
     }
     
-    // Count unique backtest dates
-    const uniqueDatesCount = new Set(dayProgress.backtests.map(bt => bt.backtestDate)).size;
+    // Count unique backtest dates and analyses
+    const uniqueDatesCount = hasBacktests 
+      ? new Set(dayProgress.backtests.map(bt => bt.backtestDate)).size 
+      : 0;
+    const analysesCount = dateAnalyses.length;
+    
+    // Determine completion status based on combined total
+    const isComplete = (uniqueDatesCount + analysesCount) >= 5;
+    
+    // Calculate what's needed to complete the day
+    const backtestsNeeded = 5 - uniqueDatesCount;
+    const analysesNeeded = 5 - analysesCount;
     
     return (
       <SelectedDateInfo>
         <InfoTitle>{format(selectedDate, 'MMMM d, yyyy')}</InfoTitle>
         
-        <StatItem>
-          <StatLabel>Unique backtest dates:</StatLabel>
-          <StatValue>{uniqueDatesCount}</StatValue>
-        </StatItem>
+        {hasBacktests && (
+          <>
+            <StatItem>
+              <StatLabel>Unique backtest dates:</StatLabel>
+              <StatValue>{uniqueDatesCount}</StatValue>
+            </StatItem>
+            
+            <StatItem>
+              <StatLabel>Total backtest entries:</StatLabel>
+              <StatValue>{dayProgress.backtests.length}</StatValue>
+            </StatItem>
+          </>
+        )}
         
-        <StatItem>
-          <StatLabel>Total entries:</StatLabel>
-          <StatValue>{dayProgress.backtests.length}</StatValue>
-        </StatItem>
+        {hasAnalyses && (
+          <StatItem>
+            <StatLabel>Total analyses:</StatLabel>
+            <StatValue>{analysesCount}</StatValue>
+          </StatItem>
+        )}
         
         <StatItem>
           <StatLabel>Status:</StatLabel>
           <StatValue>
-            {dayProgress.isComplete ? 'Complete ✅' : 'Incomplete ❌'}
+            {isComplete ? 'Complete ✅' : 'Incomplete ❌'}
           </StatValue>
         </StatItem>
         
-        <StatItem>
-          <StatLabel>Backtests needed:</StatLabel>
-          <StatValue>
-            {dayProgress.isComplete 
-              ? 'Minimum requirement met' 
-              : `${5 - uniqueDatesCount} more unique dates needed`}
-          </StatValue>
-        </StatItem>
+        {!isComplete && (
+          <StatItem>
+            <StatLabel>To complete:</StatLabel>
+            <StatValue>
+              {uniqueDatesCount > 0 || analysesCount > 0 ?
+                // If we have both backtests and analyses, show the combined requirement
+                (uniqueDatesCount > 0 && analysesCount > 0) ?
+                  `${Math.max(0, 5 - (uniqueDatesCount + analysesCount))} more unique backtest dates or analyses needed` :
+                // Otherwise show the specific requirement based on what we have
+                uniqueDatesCount > 0 ?
+                  `${backtestsNeeded} more unique backtest dates needed` :
+                  `${analysesNeeded} more analyses needed` :
+                // If we have neither, show the general requirement
+                `Need 5 unique backtest dates OR 5 analyses`}
+            </StatValue>
+          </StatItem>
+        )}
 
         <ViewEntriesButton 
           onClick={handleViewEntries}
@@ -251,4 +310,4 @@ const CalendarView: React.FC = () => {
   );
 };
 
-export default CalendarView; 
+export default CalendarView;

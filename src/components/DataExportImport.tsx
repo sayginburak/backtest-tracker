@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from '@emotion/styled';
 import { useBacktest } from '../context/BacktestContext';
+import { Analysis } from '../types';
 
 const Container = styled.div`
   background-color: #ffffff;
@@ -119,6 +120,7 @@ const DataExportImport: React.FC = () => {
   const [syncStatus, setSyncStatus] = useState<{ success: boolean; message: string } | null>(null);
   const [lastSyncCheck, setLastSyncCheck] = useState<Date | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [csvType, setCsvType] = useState<'backtests' | 'analyses' | 'all'>('all');
 
   // Check for repo updates when component mounts, but don't auto-fetch
   useEffect(() => {
@@ -174,11 +176,12 @@ const DataExportImport: React.FC = () => {
 
   const handleExport = () => {
     const data = exportData();
-    setJsonData(data);
+    const fullData = JSON.stringify({ ...JSON.parse(data), analyses: state.analyses });
+    setJsonData(fullData);
     
     // Create a download link
     const element = document.createElement('a');
-    const file = new Blob([data], { type: 'application/json' });
+    const file = new Blob([fullData], { type: 'application/json' });
     element.href = URL.createObjectURL(file);
     
     // Set the file name with current date
@@ -208,6 +211,50 @@ const DataExportImport: React.FC = () => {
     element.click();
     document.body.removeChild(element);
   };
+  
+  // Export analyses as CSV
+  const exportAnalysesToCsv = (): string => {
+    // CSV header
+    let csv = 'ID,Backtest Date,Date Performed,Result Type,Notion URL\n';
+    
+    // Get all analyses
+    const allAnalyses: Analysis[] = [];
+    Object.keys(state.analyses).forEach(date => {
+      state.analyses[date].forEach(analysis => {
+        allAnalyses.push(analysis);
+      });
+    });
+    
+    // Sort by date performed (newest first)
+    allAnalyses.sort((a, b) => {
+      return new Date(b.datePerformed).getTime() - new Date(a.datePerformed).getTime();
+    });
+    
+    // Add each analysis as a row
+    allAnalyses.forEach(analysis => {
+      csv += `"${analysis.id}","${analysis.backtestDate}","${analysis.datePerformed}","${analysis.resultType}","${analysis.notionUrl}"\n`;
+    });
+    
+    return csv;
+  };
+  
+  const handleExportAnalysesCsv = () => {
+    const csvData = exportAnalysesToCsv();
+    
+    // Create a download link
+    const element = document.createElement('a');
+    const file = new Blob([csvData], { type: 'text/csv' });
+    element.href = URL.createObjectURL(file);
+    
+    // Set the file name with current date
+    const now = new Date();
+    const dateString = now.toISOString().split('T')[0];
+    element.download = `analysis-data-${dateString}.csv`;
+    
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  };
 
   const handleImport = () => {
     if (!importText.trim()) {
@@ -217,10 +264,10 @@ const DataExportImport: React.FC = () => {
 
     try {
       // Check if it's valid JSON
-      JSON.parse(importText);
+      const parsedData = JSON.parse(importText);
       
       if (window.confirm('Are you sure you want to import this data? This will override your current data.')) {
-        importData(importText);
+        importData(JSON.stringify({ ...parsedData, analyses: parsedData.analyses || {} }));
         setImportText('');
         alert('Data imported successfully!');
       }
@@ -278,12 +325,13 @@ const DataExportImport: React.FC = () => {
       <div>
         <SectionTitle>Export Data</SectionTitle>
         <Description>
-          Export your backtest data as a JSON or CSV file. You can use JSON files to restore 
+          Export your backtest and analysis data as a JSON or CSV file. You can use JSON files to restore 
           your data later, while CSV files are better for analyzing data in spreadsheets.
         </Description>
         <ButtonContainer>
-          <Button onClick={handleExport}>Export as JSON</Button>
-          <Button onClick={handleExportCsv}>Export as CSV</Button>
+          <Button onClick={handleExport}>Export All as JSON</Button>
+          <Button onClick={handleExportCsv}>Export Backtests as CSV</Button>
+          <Button onClick={handleExportAnalysesCsv}>Export Analyses as CSV</Button>
           {jsonData && (
             <ButtonSecondary onClick={() => setJsonData('')}>
               Clear
@@ -299,7 +347,7 @@ const DataExportImport: React.FC = () => {
       <ImportContainer>
         <SectionTitle>Import Data</SectionTitle>
         <Description>
-          Import previously exported backtest data. 
+          Import previously exported backtest and analysis data. 
           <strong> Warning: This will override your current data.</strong>
         </Description>
         <TextArea
@@ -320,4 +368,4 @@ const DataExportImport: React.FC = () => {
   );
 };
 
-export default DataExportImport; 
+export default DataExportImport;

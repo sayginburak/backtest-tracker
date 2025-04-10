@@ -19,6 +19,14 @@ export interface Backtest {
   convincingRating?: number; // How convincing the liq sweep is (1-10)
 }
 
+export interface Analysis {
+  id: string;
+  backtestDate: string; // The date this analysis is for (ISO format)
+  datePerformed: string; // When the analysis was performed (ISO format)
+  resultType: 'a' | 'b' | 'c' | 'd' | 'e'; // Limited to these specific result types
+  notionUrl: string; // URL to the Notion document for this analysis
+}
+
 export interface DailyProgress {
   date: string; // Format: YYYY-MM-DD
   backtests: Backtest[];
@@ -27,7 +35,9 @@ export interface DailyProgress {
 
 export interface BacktestState {
   dailyProgress: Record<string, DailyProgress>;
+  analyses: Record<string, Analysis[]>; // Similar to dailyProgress but for analyses
   currentStreak: number;
   totalBacktests: number;
+  totalAnalyses: number; // To track total analysis count
   lastUpdated?: string; // Timestamp of when the data was last updated
-} 
+}

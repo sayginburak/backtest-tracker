@@ -4,6 +4,7 @@ import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement
 import styled from '@emotion/styled';
 import { format, subDays, isBefore, startOfMonth, endOfMonth, isWeekend, isBefore as isBeforeDate, parseISO } from 'date-fns';
 import { useBacktest } from '../context/BacktestContext';
+import { Analysis } from '../types';
 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -120,19 +121,28 @@ const BurndownChart: React.FC = () => {
       totalBacktests += uniqueDatesCount;
     });
 
-    // Actual unique backtest dates per day - ensure correct date formatting for lookup
-    const actualData = dateRange.map(date => {
+    // Calculate total entries (unique backtest dates + analyses) per day
+    const totalEntriesData = dateRange.map(date => {
       const dateKey = format(date, 'yyyy-MM-dd');
       const dayProgress = state.dailyProgress[dateKey];
-      return dayProgress ? new Set(dayProgress.backtests.map((bt: any) => bt.backtestDate)).size : 0;
+      const dateAnalyses = state.analyses[dateKey] || [];
+      
+      // Count unique backtest dates
+      const uniqueBacktestDates = dayProgress ? new Set(dayProgress.backtests.map((bt: any) => bt.backtestDate)).size : 0;
+      
+      // Count analyses
+      const analysesCount = dateAnalyses.length;
+      
+      // Return the combined total
+      return uniqueBacktestDates + analysesCount;
     });
     
-    // Cumulative unique backtest dates (total done so far)
-    const cumulativeData = [];
-    let running = 0;
-    for (const count of actualData) {
-      running += count;
-      cumulativeData.push(running);
+    // Cumulative total entries (total done so far)
+    const cumulativeTotalData = [];
+    let runningTotal = 0;
+    for (const count of totalEntriesData) {
+      runningTotal += count;
+      cumulativeTotalData.push(runningTotal);
     }
     
     // Daily target line (constant at 5)
@@ -164,8 +174,8 @@ const BurndownChart: React.FC = () => {
       labels,
       datasets: [
         {
-          label: 'Daily Backtests',
-          data: actualData,
+          label: 'Total Entries',
+          data: totalEntriesData,
           borderColor: 'rgb(54, 162, 235)',
           backgroundColor: 'rgba(54, 162, 235, 0.5)',
           tension: 0.1,
@@ -173,8 +183,8 @@ const BurndownChart: React.FC = () => {
           pointRadius: 4,
         },
         {
-          label: 'Cumulative Progress',
-          data: cumulativeData,
+          label: 'Cumulative Total Entries',
+          data: cumulativeTotalData,
           borderColor: 'rgb(75, 192, 192)',
           backgroundColor: 'rgba(75, 192, 192, 0.5)',
           tension: 0.1,
@@ -205,7 +215,7 @@ const BurndownChart: React.FC = () => {
 
   return (
     <ChartContainer>
-      <ChartTitle>Backtest Progress Chart</ChartTitle>
+      <ChartTitle>Progress Chart</ChartTitle>
       
       <FilterContainer>
         <label htmlFor="period-filter">Time Period:</label>
@@ -231,7 +241,7 @@ const BurndownChart: React.FC = () => {
                 beginAtZero: true,
                 title: {
                   display: true,
-                  text: 'Number of Backtests',
+                  text: 'Number of Entries',
                   color: '#333',
                 },
                 ticks: {
@@ -275,9 +285,12 @@ const BurndownChart: React.FC = () => {
         <StatText>
           <strong>Total backtests completed:</strong> {state.totalBacktests}
         </StatText>
+        <StatText>
+          <strong>Total analyses completed:</strong> {state.totalAnalyses}
+        </StatText>
       </div>
     </ChartContainer>
   );
 };
 
-export default BurndownChart; 
+export default BurndownChart;

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { BacktestState, Backtest } from '../types';
+import { BacktestState, Backtest, Analysis } from '../types';
 import { format } from 'date-fns';
 
 // Simple interface for sync result
@@ -13,17 +13,22 @@ interface BacktestContextType {
   state: BacktestState;
   addBacktest: (backtest: Omit<Backtest, 'id'>) => void;
   deleteBacktest: (id: string) => void;
+  addAnalysis: (analysis: Omit<Analysis, 'id'>) => void;
+  deleteAnalysis: (id: string) => void;
   exportData: () => string;
   exportToCsv: () => string;
   importData: (jsonData: string) => void;
   syncWithRepo: (force?: boolean) => Promise<SyncResult>;
+  cleanAndValidateData: (data: BacktestState) => BacktestState;
 }
 
 // Initial state
 const initialState: BacktestState = {
   dailyProgress: {},
+  analyses: {},
   currentStreak: 0,
   totalBacktests: 0,
+  totalAnalyses: 0,
   lastUpdated: Date.now().toString(),
 };
 
@@ -36,11 +41,9 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
   const migrateBacktestData = (currentState: BacktestState): BacktestState => {
     const updatedState = { ...currentState };
     let dataUpdated = false;
-    
     // Add noSetupFound field to all backtests
     Object.keys(updatedState.dailyProgress).forEach(date => {
       const day = updatedState.dailyProgress[date];
-      
       day.backtests = day.backtests.map(backtest => {
         if (!('noSetupFound' in backtest)) {
           dataUpdated = true;
@@ -52,13 +55,23 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
         return backtest;
       });
     });
-    
     if (dataUpdated) {
       console.log('Migrated backtest data to include noSetupFound field');
       updatedState.lastUpdated = Date.now().toString();
     }
-    
     return updatedState;
+  };
+
+  const cleanAndValidateData = (data: BacktestState): BacktestState => {
+    const validatedData = { ...data };
+    // Validate analyses
+    Object.keys(validatedData.analyses).forEach(date => {
+      validatedData.analyses[date] = validatedData.analyses[date].filter(analysis => {
+        const isValidDate = !isNaN(Date.parse(analysis.datePerformed));
+        return isValidDate && analysis.resultType.match(/[abcde]/);
+      });
+    });
+    return validatedData;
   };
 
   // Load initial state from localStorage
@@ -104,6 +117,20 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
   };
 
+  // Helper function to check if a day is complete (5+ unique backtests OR 5+ analyses)
+  const isDayComplete = (date: string): boolean => {
+    const dayProgress = state.dailyProgress[date];
+    if (!dayProgress) return false;
+    
+    // Check if there are 5+ unique backtest dates
+    const uniqueDatesCount = countUniqueBacktestDates(dayProgress.backtests);
+    if (uniqueDatesCount >= 5) return true;
+    
+    // Check if there are 5+ analyses for this date
+    const dateAnalyses = state.analyses[date] || [];
+    return dateAnalyses.length >= 5;
+  };
+
   // Calculate streak based on consecutive completed days
   const calculateStreak = () => {
     const sortedDates = Object.keys(state.dailyProgress)
@@ -120,9 +147,8 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
     yesterdayDate.setDate(yesterdayDate.getDate() - 1);
     const yesterday = format(yesterdayDate, 'yyyy-MM-dd');
     
-    // Check if today or yesterday is complete
-    const hasRecentComplete = state.dailyProgress[today]?.isComplete || 
-                             state.dailyProgress[yesterday]?.isComplete;
+    // Check if today or yesterday is complete using the new criteria
+    const hasRecentComplete = isDayComplete(today) || isDayComplete(yesterday);
     
     if (!hasRecentComplete) {
       setState(prev => ({ ...prev, currentStreak: 0 }));
@@ -132,9 +158,8 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
     // Count consecutive days
     for (let i = 0; i < sortedDates.length; i++) {
       const date = sortedDates[i];
-      const progress = state.dailyProgress[date];
       
-      if (progress.isComplete) {
+      if (isDayComplete(date)) {
         streak++;
       } else {
         break;
@@ -151,38 +176,22 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   // Add a new backtest
-  const addBacktest = (backtestData: Omit<Backtest, 'id'>) => {
-    const performDate = backtestData.datePerformed || format(new Date(), 'yyyy-MM-dd');
-    const id = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  const addBacktest = (backtest: Omit<Backtest, 'id'>) => {
+    const id = `${Date.now()}`;
+    const date = format(new Date(), 'yyyy-MM-dd');
     
     setState(prevState => {
-      const updatedDailyProgress = { ...prevState.dailyProgress };
-      const dayProgress = updatedDailyProgress[performDate] || { 
-        date: performDate, 
-        backtests: [], 
-        isComplete: false 
-      };
-      
-      const updatedBacktests = [...dayProgress.backtests, { ...backtestData, id }];
-      const uniqueDatesCount = countUniqueBacktestDates(updatedBacktests);
-      
-      updatedDailyProgress[performDate] = {
-        ...dayProgress,
-        backtests: updatedBacktests,
-        isComplete: uniqueDatesCount >= 5,
-      };
-      
-      // Calculate new total based on unique dates across all days
-      let newTotal = 0;
-      Object.values(updatedDailyProgress).forEach(day => {
-        newTotal += countUniqueBacktestDates(day.backtests);
-      });
+      const dailyProgress = prevState.dailyProgress[date] || { backtests: [] };
       
       return {
         ...prevState,
-        dailyProgress: updatedDailyProgress,
-        totalBacktests: newTotal,
-        lastUpdated: Date.now().toString(),
+        dailyProgress: {
+          ...prevState.dailyProgress,
+          [date]: {
+            backtests: [...dailyProgress.backtests, { ...backtest, id }]
+          }
+        },
+        lastUpdated: Date.now().toString()
       };
     });
   };
@@ -190,130 +199,123 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
   // Delete a backtest
   const deleteBacktest = (id: string) => {
     setState(prevState => {
-      // Find which day contains this backtest
-      let targetDate: string | null = null;
-      const updatedDailyProgress = { ...prevState.dailyProgress };
+      const newDailyProgress = { ...prevState.dailyProgress };
       
-      for (const date in updatedDailyProgress) {
-        if (updatedDailyProgress[date].backtests.some(bt => bt.id === id)) {
-          targetDate = date;
-          break;
+      // Find and remove the backtest
+      Object.keys(newDailyProgress).forEach(date => {
+        const day = newDailyProgress[date];
+        day.backtests = day.backtests.filter(bt => bt.id !== id);
+        
+        // Remove the day if it's empty
+        if (day.backtests.length === 0) {
+          delete newDailyProgress[date];
         }
-      }
-      
-      if (!targetDate) return prevState;
-      
-      // Update the day's backtests
-      const dayProgress = updatedDailyProgress[targetDate];
-      const updatedBacktests = dayProgress.backtests.filter(bt => bt.id !== id);
-      const uniqueDatesCount = countUniqueBacktestDates(updatedBacktests);
-      
-      updatedDailyProgress[targetDate] = {
-        ...dayProgress,
-        backtests: updatedBacktests,
-        isComplete: uniqueDatesCount >= 5,
-      };
-      
-      // Calculate new total based on unique dates across all days
-      let newTotal = 0;
-      Object.values(updatedDailyProgress).forEach(day => {
-        newTotal += countUniqueBacktestDates(day.backtests);
       });
       
       return {
         ...prevState,
-        dailyProgress: updatedDailyProgress,
-        totalBacktests: newTotal,
-        lastUpdated: Date.now().toString(),
+        dailyProgress: newDailyProgress,
+        lastUpdated: Date.now().toString()
       };
     });
   };
 
-  // Export data to JSON
-  const exportData = (): string => {
-    return JSON.stringify({
-      version: Date.now().toString(),
-      data: state
-    }, null, 2);
+  // Add a new analysis
+  const addAnalysis = (analysis: Omit<Analysis, 'id'>) => {
+    const id = `${Date.now()}`;
+    const date = format(new Date(analysis.backtestDate), 'yyyy-MM-dd');
+    
+    setState(prevState => {
+      const dateAnalyses = prevState.analyses[date] || [];
+      
+      return {
+        ...prevState,
+        analyses: {
+          ...prevState.analyses,
+          [date]: [...dateAnalyses, { ...analysis, id }]
+        },
+        totalAnalyses: prevState.totalAnalyses + 1,
+        lastUpdated: Date.now().toString()
+      };
+    });
   };
 
-  // Export data to CSV
-  const exportToCsv = (): string => {
-    // Define CSV header with all possible backtest fields
+  // Delete an analysis
+  const deleteAnalysis = (id: string) => {
+    setState(prevState => {
+      const newAnalyses = { ...prevState.analyses };
+      let deletedCount = 0;
+      
+      // Find and remove the analysis
+      Object.keys(newAnalyses).forEach(date => {
+        const dateAnalyses = newAnalyses[date];
+        const filteredAnalyses = dateAnalyses.filter(a => a.id !== id);
+        
+        if (filteredAnalyses.length !== dateAnalyses.length) {
+          deletedCount++;
+        }
+        
+        if (filteredAnalyses.length === 0) {
+          delete newAnalyses[date];
+        } else {
+          newAnalyses[date] = filteredAnalyses;
+        }
+      });
+      
+      return {
+        ...prevState,
+        analyses: newAnalyses,
+        totalAnalyses: Math.max(0, prevState.totalAnalyses - deletedCount),
+        lastUpdated: Date.now().toString()
+      };
+    });
+  };
+
+  // Export data as JSON
+  const exportData = () => {
+    return JSON.stringify({
+      data: state,
+      version: Date.now().toString()
+    });
+  };
+
+  // Export data as CSV
+  const exportToCsv = () => {
+    // Helper function to escape CSV fields
+    const escapeField = (field: string) => {
+      if (!field) return '';
+      return `"${field.replace(/"/g, '""')}"`;
+    };
+    
+    let csvContent = '';
+    
+    // Define CSV headers
     const headers = [
       'ID',
+      'Date',
       'Backtest Date',
-      'Date Performed',
       'No Setup Found',
-      'Has Liquidity Sweep',
-      'Swing Formation Time',
-      'Swing Formation DateTime',
-      'Obviousness Rating',
-      'MSS Time',
-      'MSS DateTime',
-      'Timeframe',
-      'Is Protected Swing',
-      'Did Price Expand',
-      'Pips From Swing Low',
-      'Pips From MSS',
-      'Chart URL',
-      'Liquidity Swing Type',
-      'Convincing Rating'
+      'Notes'
     ];
     
-    // Initialize CSV content with headers
-    let csvContent = headers.join(',') + '\n';
-    
-    // Collect all backtests across all days into a flat array
-    const allBacktests: Backtest[] = [];
-    Object.values(state.dailyProgress).forEach(day => {
-      day.backtests.forEach(backtest => {
-        allBacktests.push(backtest);
-      });
-    });
-    
-    // Sort backtests by date (newest first)
-    allBacktests.sort((a, b) => {
-      return new Date(b.backtestDate).getTime() - new Date(a.backtestDate).getTime();
-    });
+    // Add headers to CSV content
+    csvContent += headers.join(',') + '\n';
     
     // Convert each backtest to a CSV row
-    allBacktests.forEach(backtest => {
-      // Helper function to escape CSV field values
-      const escapeField = (value: any): string => {
-        if (value === undefined || value === null) return '';
-        const stringValue = String(value);
-        // Escape quotes and wrap in quotes if contains commas or quotes
-        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
-          return `"${stringValue.replace(/"/g, '""')}"`;
-        }
-        return stringValue;
-      };
-      
-      // Map backtest to CSV row values
-      const row = [
-        escapeField(backtest.id),
-        escapeField(backtest.backtestDate),
-        escapeField(backtest.datePerformed),
-        escapeField(backtest.noSetupFound),
-        escapeField(backtest.hasLiqSweep),
-        escapeField(backtest.swingFormationTime),
-        escapeField(backtest.swingFormationDateTime),
-        escapeField(backtest.obviousnessRating),
-        escapeField(backtest.mssTime),
-        escapeField(backtest.mssDateTime),
-        escapeField(backtest.timeframe),
-        escapeField(backtest.isProtectedSwing),
-        escapeField(backtest.didPriceExpand),
-        escapeField(backtest.pipsFromSwingLow),
-        escapeField(backtest.pipsFromMSS),
-        escapeField(backtest.chartUrl),
-        escapeField(backtest.liqSwingType),
-        escapeField(backtest.convincingRating)
-      ];
-      
-      // Add row to CSV content
-      csvContent += row.join(',') + '\n';
+    Object.entries(state.dailyProgress).forEach(([date, dayProgress]) => {
+      dayProgress.backtests.forEach(backtest => {
+        // Map backtest to CSV row values
+        const row = [
+          escapeField(backtest.id),
+          escapeField(date),
+          escapeField(backtest.backtestDate),
+          escapeField(backtest.noSetupFound ? 'true' : 'false'),
+          escapeField(backtest.notes || '')
+        ];
+        
+        // Add row to CSV content
+        csvContent += row.join(',') + '\n';
+      });
     });
     
     return csvContent;
@@ -336,7 +338,7 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   // Sync with repository data - optimized to prevent unnecessary updates and caching
-  const syncWithRepo = async (force: boolean = false): Promise<SyncResult> => {
+  const handleSyncWithRepo = async (force: boolean = false): Promise<SyncResult> => {
     try {
       // Prevent multiple syncs
       if ((window as any).__syncInProgress) {
@@ -383,128 +385,66 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
       const response = await fetch(url, fetchOptions);
       
       if (!response.ok) {
-        console.warn(`[Sync] Failed: ${response.status} ${response.statusText}`);
-        (window as any).__syncInProgress = false;
-        return { 
-          success: false, 
-          message: `Failed to fetch data: ${response.status}` 
-        };
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      // Parse the data
       const repoData = await response.json();
-      const repoState = repoData.data;
+      const validatedRepoData = cleanAndValidateData(repoData);
       
-      // Validate and clean the data before processing
-      const cleanedData = cleanAndValidateData(repoState);
+      // Compare lastUpdated timestamps
+      const currentLastUpdated = parseInt(state.lastUpdated);
+      const repoLastUpdated = parseInt(validatedRepoData.lastUpdated);
       
-      // Only update if there's a meaningful difference or force is true
-      const currentVersion = state.lastUpdated || '0';
-      const repoVersion = repoData.version || '0';
-      
-      if (force || repoVersion > currentVersion) {
-        console.log(`[Sync] Updating: ${currentVersion} → ${repoVersion}`);
-        
-        // Calculate actual backtest count from repo data using unique dates
-        let repoBacktestCount = 0;
-        Object.values(cleanedData.dailyProgress).forEach((day: any) => {
-          // Count unique dates within each day
-          const uniqueDatesCount = new Set(day.backtests.map((bt: any) => bt.backtestDate)).size;
-          repoBacktestCount += uniqueDatesCount;
-        });
-        
-        // Update state with the correct count
-        setState({
-          ...cleanedData,
-          totalBacktests: repoBacktestCount,
-          lastUpdated: repoVersion
-        });
-        
+      if (!force && currentLastUpdated >= repoLastUpdated) {
+        console.log('[Sync] Local data is up to date');
         (window as any).__syncInProgress = false;
-        return { success: true, message: "Data updated from repository" };
+        return { success: true, message: "Your data is up to date" };
       }
       
-      console.log("[Sync] Local data is already up-to-date");
+      // Merge data, giving priority to repo data for shared fields
+      setState(prevState => ({
+        ...prevState,
+        ...validatedRepoData,
+        lastUpdated: repoLastUpdated.toString()
+      }));
+      
+      console.log('[Sync] Data synchronized successfully');
       (window as any).__syncInProgress = false;
-      return { success: true, message: "Local data is up to date" };
+      return { success: true, message: "Data synchronized successfully" };
+      
     } catch (error) {
-      console.error("[Sync] Error:", error);
+      console.error('[Sync] Error:', error);
       (window as any).__syncInProgress = false;
       return { 
         success: false, 
-        message: `Error syncing with repository: ${error}` 
+        message: error instanceof Error ? error.message : String(error)
       };
     }
   };
-  
-  // Helper function to clean and validate data
-  const cleanAndValidateData = (data: any): BacktestState => {
-    const cleanedData = { ...data };
-    
-    try {
-      // Validate dates in the data
-      Object.keys(cleanedData.dailyProgress).forEach(dateKey => {
-        const day = cleanedData.dailyProgress[dateKey];
-        
-        // Validate and filter out entries with invalid dates
-        day.backtests = day.backtests.filter((backtest: any) => {
-          try {
-            // Check if dates are valid by trying to parse them
-            if (backtest.backtestDate) {
-              const date = new Date(backtest.backtestDate);
-              if (isNaN(date.getTime())) {
-                console.error(`[Sync] Invalid backtestDate: ${backtest.backtestDate} - Skipping entry`);
-                return false;
-              }
-            }
-            
-            if (backtest.datePerformed) {
-              const date = new Date(backtest.datePerformed);
-              if (isNaN(date.getTime())) {
-                console.error(`[Sync] Invalid datePerformed: ${backtest.datePerformed} - Skipping entry`);
-                return false;
-              }
-            }
-            
-            // Entry passed validation
-            return true;
-          } catch (error) {
-            console.error(`[Sync] Error validating backtest: ${error}`);
-            return false;
-          }
-        });
-        
-        // Update isComplete status based on unique dates count
-        const uniqueDatesCount = new Set(day.backtests.map((bt: any) => bt.backtestDate)).size;
-        day.isComplete = uniqueDatesCount >= 5;
-      });
-    } catch (error) {
-      console.error("[Sync] Data validation error:", error);
-    }
-    
-    return cleanedData;
-  };
 
   return (
-    <BacktestContext.Provider value={{ 
-      state, 
-      addBacktest, 
-      deleteBacktest, 
+    <BacktestContext.Provider value={{
+      state,
+      addBacktest,
+      deleteBacktest,
+      addAnalysis,
+      deleteAnalysis,
       exportData,
-      exportToCsv, 
-      importData, 
-      syncWithRepo 
+      exportToCsv,
+      importData,
+      syncWithRepo: handleSyncWithRepo,
+      cleanAndValidateData
     }}>
       {children}
     </BacktestContext.Provider>
   );
 };
 
-// Hook to access the context
+// Custom hook to use the backtest context
 export const useBacktest = () => {
   const context = useContext(BacktestContext);
   if (context === undefined) {
     throw new Error('useBacktest must be used within a BacktestProvider');
   }
   return context;
-}; 
+};
