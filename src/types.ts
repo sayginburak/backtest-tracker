@@ -17,6 +17,7 @@ export interface Backtest {
   chartUrl?: string; // URL to the chart for this backtest
   liqSwingType?: string; // Type of liquidity swing
   convincingRating?: number; // How convincing the liq sweep is (1-10)
+  notes?: string; // Additional notes for the backtest
 }
 
 export interface Analysis {

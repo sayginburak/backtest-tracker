@@ -120,7 +120,6 @@ const DataExportImport: React.FC = () => {
   const [syncStatus, setSyncStatus] = useState<{ success: boolean; message: string } | null>(null);
   const [lastSyncCheck, setLastSyncCheck] = useState<Date | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [csvType, setCsvType] = useState<'backtests' | 'analyses' | 'all'>('all');
 
   // Check for repo updates when component mounts, but don't auto-fetch
   useEffect(() => {
