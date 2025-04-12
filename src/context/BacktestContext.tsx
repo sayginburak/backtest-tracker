@@ -187,7 +187,7 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
   // Add a new backtest
   const addBacktest = (backtest: Omit<Backtest, 'id'>) => {
     const id = `${Date.now()}`;
-    const date = format(new Date(), 'yyyy-MM-dd');
+    const date = format(new Date(backtest.datePerformed), 'yyyy-MM-dd');
     
     setState(prevState => {
       const dailyProgress = prevState.dailyProgress[date] || { date, backtests: [], isComplete: false };
@@ -234,7 +234,7 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
   // Add a new analysis
   const addAnalysis = (analysis: Omit<Analysis, 'id'>) => {
     const id = `${Date.now()}`;
-    const date = format(new Date(analysis.backtestDate), 'yyyy-MM-dd');
+    const date = format(new Date(analysis.datePerformed), 'yyyy-MM-dd');
     
     setState(prevState => {
       const dateAnalyses = prevState.analyses[date] || [];
