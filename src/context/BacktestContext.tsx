@@ -293,20 +293,33 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
   // Export data as CSV
   const exportToCsv = () => {
     // Helper function to escape CSV fields
-    const escapeField = (field: string) => {
-      if (!field) return '';
-      return `"${field.replace(/"/g, '""')}"`;
+    const escapeField = (field: string | number | boolean | null | undefined) => {
+      if (field === null || field === undefined) return '';
+      return `"${String(field).replace(/"/g, '""')}"`;
     };
     
     let csvContent = '';
     
-    // Define CSV headers
+    // Define CSV headers exactly as specified
     const headers = [
       'ID',
-      'Date',
       'Backtest Date',
+      'Date Performed',
       'No Setup Found',
-      'Notes'
+      'Has Liquidity Sweep',
+      'Swing Formation Time',
+      'Swing Formation DateTime',
+      'Obviousness Rating',
+      'MSS Time',
+      'MSS DateTime',
+      'Timeframe',
+      'Is Protected Swing',
+      'Did Price Expand',
+      'Pips From Swing Low',
+      'Pips From MSS',
+      'Chart URL',
+      'Liquidity Swing Type',
+      'Convincing Rating'
     ];
     
     // Add headers to CSV content
@@ -315,13 +328,26 @@ export const BacktestProvider: React.FC<{ children: ReactNode }> = ({ children }
     // Convert each backtest to a CSV row
     Object.entries(state.dailyProgress).forEach(([date, dayProgress]) => {
       dayProgress.backtests.forEach(backtest => {
-        // Map backtest to CSV row values
+        // Map backtest to CSV row values in exact order of headers
         const row = [
           escapeField(backtest.id),
-          escapeField(date),
           escapeField(backtest.backtestDate),
+          escapeField(date),
           escapeField(backtest.noSetupFound ? 'true' : 'false'),
-          escapeField(backtest.notes || '')
+          escapeField(backtest.noSetupFound ? '' : (backtest.hasLiqSweep ? 'true' : 'false')),
+          escapeField(backtest.noSetupFound ? '' : backtest.swingFormationTime),
+          escapeField(backtest.noSetupFound ? '' : backtest.swingFormationDateTime),
+          escapeField(backtest.noSetupFound ? '' : backtest.obviousnessRating),
+          escapeField(backtest.noSetupFound ? '' : backtest.mssTime),
+          escapeField(backtest.noSetupFound ? '' : backtest.mssDateTime),
+          escapeField(backtest.noSetupFound ? '' : backtest.timeframe),
+          escapeField(backtest.noSetupFound ? '' : (backtest.isProtectedSwing ? 'true' : 'false')),
+          escapeField(backtest.noSetupFound ? '' : (backtest.didPriceExpand ? 'true' : 'false')),
+          escapeField(backtest.noSetupFound ? '' : backtest.pipsFromSwingLow),
+          escapeField(backtest.noSetupFound ? '' : backtest.pipsFromMSS),
+          escapeField(backtest.chartUrl),
+          escapeField(backtest.noSetupFound ? '' : backtest.liqSwingType),
+          escapeField(backtest.noSetupFound ? '' : backtest.convincingRating)
         ];
         
         // Add row to CSV content
