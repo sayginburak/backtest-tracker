@@ -15,7 +15,7 @@ A frontend-only application for tracking and visualizing daily trading backtest 
   - Pip measurements
 - Calendar view to visualize daily backtest completion
 - Burndown chart to track progress over time
-- Export/Import data as JSON (for GitHub Pages data persistence)
+
 - Responsive UI that works on both desktop and mobile
 
 ## How to Run Locally
@@ -25,40 +25,64 @@ A frontend-only application for tracking and visualizing daily trading backtest 
    ```
    npm install
    ```
-3. Start the development server:
+   This will install all required packages, including `@supabase/supabase-js`.
+3. Copy and configure your environment variables. Create a `.env.development` file (or use the provided one) with the following:
+   ```env
+   VITE_SUPABASE_URL=<your-supabase-project-url>
+   VITE_SUPABASE_ANON_KEY=<your-anon-public-key>
+   ```
+   Example:
+   ```env
+   VITE_SUPABASE_URL=https://xyzcompany.supabase.co
+   VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6...
+   ```
+4. Start the development server:
    ```
    npm run dev
    ```
-4. Open the application in your browser at `http://localhost:5173`
+5. Open the application in your browser at `http://localhost:5173`.
 
-## Deployment to GitHub Pages
+## Database (Supabase Backend)
 
-To deploy this app to GitHub Pages:
+All data is now persisted remotely using [Supabase](https://supabase.com/) as the backend database. Local JSON export/import and sync features have been removed.
 
-1. In your `vite.config.ts` file, add your repository name as the base:
-   ```js
-   export default defineConfig({
-     plugins: [react()],
-     base: '/backtest-tracker/',
-     // other configuration...
-   })
+**Environment Variables:**
+- `VITE_SUPABASE_URL`: Your Supabase project URL
+- `VITE_SUPABASE_ANON_KEY`: Your Supabase anon public key
+
+**Example `.env.development`**
+```env
+VITE_SUPABASE_URL=https://xyzcompany.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6...
+```
+
+**Database Migration:**
+- To set up the required tables, run:
+  ```
+  supabase db push
+  ```
+  or manually execute the SQL in `supabase/migrations/20250419_create_backtests_and_analyses.sql` via the Supabase dashboard.
+
+## Data Persistence
+
+- All user data is stored securely and remotely in your Supabase database.
+- There is no longer any local JSON file sync or import/export. Data is always up-to-date and available across devices.
+
+## Deployment
+
+To deploy this app (e.g. to GitHub Pages or another static host):
+
+1. Build the project:
    ```
+   npm run build
+   ```
+2. Serve or deploy the `dist/` directory as needed.
 
-2. Add a GitHub Pages deployment script to your package.json:
-   ```json
-   "scripts": {
-     "dev": "vite",
-     "build": "vite build",
-     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-     "preview": "vite preview",
-     "deploy": "npm run build && gh-pages -d dist"
-   }
-   ```
+---
 
-3. Install the gh-pages package:
-   ```
-   npm install --save-dev gh-pages
-   ```
+**Note:**
+- Make sure your `.env.production` is configured for production deployments.
+- For more details on Supabase setup, see the [Supabase docs](https://supabase.com/docs).
 
 4. Run the deploy command:
    ```

@@ -293,25 +293,36 @@ const BacktestList: React.FC = () => {
               {filteredBacktests.map((backtest) => (
                 <TableRow key={backtest.id}>
                   <TableCell>
-                    {(() => {
-                      try {
-                        // Check if date is valid by parsing, will throw if invalid
-                        return format(parseISO(backtest.backtestDate), 'MMM dd, yyyy');
-                      } catch (error) {
-                        console.error(`Invalid backtestDate: ${backtest.backtestDate}`, error);
-                        return `Invalid date: ${backtest.backtestDate}`;
-                      }
-                    })()}
+                    {!backtest.backtestDate ? (
+                      <span style={{ color: 'red' }}>No date</span>
+                    ) : (
+                      <span>
+                        {(() => {
+                          try {
+                            return format(parseISO(backtest.backtestDate), 'MMM dd, yyyy');
+                          } catch (error) {
+                            console.error(`Invalid backtestDate: ${backtest.backtestDate}`, error);
+                            return <span style={{ color: 'red' }}>Invalid date: {String(backtest.backtestDate)}</span>;
+                          }
+                        })()}
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell>
-                    {(() => {
-                      try {
-                        return format(parseISO(backtest.datePerformed), 'MMM dd, yyyy');
-                      } catch (error) {
-                        console.error(`Invalid datePerformed: ${backtest.datePerformed}`, error);
-                        return `Invalid date: ${backtest.datePerformed}`;
-                      }
-                    })()}
+                    {!backtest.datePerformed ? (
+                      <span style={{ color: 'red' }}>No date</span>
+                    ) : (
+                      <span>
+                        {(() => {
+                          try {
+                            return format(parseISO(backtest.datePerformed), 'MMM dd, yyyy');
+                          } catch (error) {
+                            console.error(`Invalid datePerformed: ${backtest.datePerformed}`, error);
+                            return <span style={{ color: 'red' }}>Invalid date: {String(backtest.datePerformed)}</span>;
+                          }
+                        })()}
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell>
                     {backtest.noSetupFound ? 

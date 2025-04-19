@@ -78,7 +78,7 @@ const Select = styled.select`
   font-size: 1rem;
   color: #333;
   background-color: #fff;
-  
+   
   &:focus {
     border-color: #007bff;
     box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);

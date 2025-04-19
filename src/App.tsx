@@ -8,8 +8,8 @@ import BacktestList from './components/BacktestList';
 import AnalysisList from './components/AnalysisList';
 import CalendarView from './components/CalendarView';
 import BurndownChart from './components/BurndownChart';
-import DataExportImport from './components/DataExportImport';
-import AutoSync from './components/AutoSync';
+
+
 import AddAnalysisPage from './components/AddAnalysisPage';
 
 // Create a context for the selected filter date
@@ -20,8 +20,8 @@ interface FilterContextType {
 
 // Create a context for tab management
 interface TabContextType {
-  activeTab: 'dashboard' | 'add-backtest' | 'data' | 'add-analysis';
-  setActiveTab: (tab: 'dashboard' | 'add-backtest' | 'data' | 'add-analysis') => void;
+  activeTab: 'dashboard' | 'add-backtest' | 'add-analysis';
+  setActiveTab: (tab: 'dashboard' | 'add-backtest' | 'add-analysis') => void;
 }
 
 const FilterContext = createContext<FilterContextType>({
@@ -87,7 +87,7 @@ function AppContent() {
 
   // If we're in production and trying to view an admin tab, redirect to dashboard
   useEffect(() => {
-    if (!showAdminTabs && (activeTab === 'add-backtest' || activeTab === 'data' || activeTab === 'add-analysis')) {
+    if (!showAdminTabs && (activeTab === 'add-backtest' || activeTab === 'add-analysis')) {
       setActiveTab('dashboard');
     }
   }, [activeTab, showAdminTabs, setActiveTab]);
@@ -104,8 +104,7 @@ function AppContent() {
 
   return (
     <>
-      {/* AutoSync component will handle background syncing */}
-      <AutoSync />
+
       
       <AppContainer>
         <Header>
@@ -135,12 +134,7 @@ function AppContent() {
                 >
                   Add Analysis
                 </Tab>
-                <Tab 
-                  active={activeTab === 'data'}
-                  onClick={() => setActiveTab('data')}
-                >
-                  Data Management
-                </Tab>
+                
               </>
             )}
           </TabContainer>
@@ -163,16 +157,14 @@ function AppContent() {
           <AddAnalysisPage />
         )}
 
-        {activeTab === 'data' && showAdminTabs && (
-          <DataExportImport />
-        )}
+        
       </AppContainer>
     </>
   );
 }
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'add-backtest' | 'data' | 'add-analysis'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'add-backtest' | 'add-analysis'>('dashboard');
   const [filterDate, setFilterDate] = useState<string>('');
 
   return (
